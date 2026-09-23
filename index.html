@@ -996,7 +996,8 @@ document.addEventListener("click", async e => {
     else if (!window.claude) {
       const file = new File([data], name, {type:"application/json"});
       if (navigator.canShare && navigator.canShare({files:[file]})) {
-        try { await navigator.share({files:[file], title:name}); saveBackupAt(); toast("バックアップを書き出しました"); render(); }
+        // title や text を渡すと、iPhone の「"ファイル"に保存」で余分なテキストファイルもできるため、ファイルだけを渡す
+        try { await navigator.share({files:[file]}); saveBackupAt(); toast("バックアップを書き出しました"); render(); }
         catch(err){ if (err && err.name!=="AbortError") toast("書き出せませんでした。もう一度お試しください。"); }
         return;
       }
