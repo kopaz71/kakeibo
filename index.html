@@ -108,6 +108,11 @@ input,select,textarea{font-size:16px!important}
 .chip{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:3px 11px;font-size:12px;font-weight:700;cursor:pointer;background:var(--warn-soft);color:var(--warn)}
 .chip:hover{filter:brightness(.97)}
 
+/* 月｜年の切り替え */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--surface-2);border-radius:12px;padding:3px;width:min(100%,220px);margin:0 auto 12px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:5px 0;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
 /* category bars */
 .donut{position:relative;width:min(64vw,220px);aspect-ratio:1;margin:4px auto 14px}
 .donut svg{display:block;width:100%;height:100%;transform:rotate(-90deg)}
@@ -630,6 +635,8 @@ function flipMonth(){}
 const LS = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
 const dayStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const daysSince = ds => Math.floor((new Date(dayStr(new Date())+"T00:00:00") - new Date(ds+"T00:00:00")) / 864e5);
+S.ov = LS.get("kkb-ov")==="year" ? "year" : "month";   // 概要の「月｜年」
+const navStep = () => S.tab==="overview" && S.ov==="year" ? 12 : 1;
 function saveBackupAt(){ LS.set("kkb-backup-at", dayStr(new Date())); }
 function backupNote(){
   const at = LS.get("kkb-backup-at"); if (!at) return "まだ書き出していません";
@@ -664,7 +671,7 @@ function render(){
 function trendChart(id, months, vals, cur, avg){
   const mx = niceMax(Math.max(...vals, avg||0, 1));
   const grid = [0,.5,1].map(f=>`<div class="gl${f===0?" base":""}" style="bottom:calc(22px + ${f} * (100% - 22px))"><span>${f? short(mx*f):"0"}</span></div>`).join("");
-  const cols = months.map((m,i)=>`<button type="button" class="col${m===cur?" cur":""}" data-ym="${m}" data-v="${vals[i]}" aria-label="${ymLabel(m)} ${yen(vals[i])}"><div class="b" style="height:${Math.max(0,vals[i])/mx*100}%;--i:${i}"></div><span class="x">${Number(m.slice(5))}月</span></button>`).join("");
+  const cols = months.map((m,i)=>`<button type="button" class="col${m===cur?" cur":""}" data-ym="${m}" data-v="${vals[i]}" aria-label="${ymLabel(m)} ${yen(vals[i])}"><div class="b" style="height:${Math.max(0,vals[i])/mx*100}%;--i:${i}"></div><span class="x">${Number(m.slice(5))}${months.length>8?"":"月"}</span></button>`).join("");
   const av = avg ? `<div class="avg" style="bottom:calc(22px + ${avg/mx} * (100% - 22px))"><span>平均 ${short(avg)}</span></div>` : "";
   return `<div class="trend" id="${id}">${grid}${av}<div class="cols">${cols}</div></div>`;
 }
@@ -702,48 +709,86 @@ function catTrend(ym){
   </section>`;
 }
 
-function renderOverview(){
-  const ym = S.month, txns = S.months[ym]||[];
-  const total = monthTotal(ym), prev = monthTotal(shiftYm(ym,-1));
-  const unc = txns.filter(t=>t.cat===NONE);
-  // trend
-  const months = Array.from({length:12},(_,i)=>shiftYm(ym,i-11)).filter(m => m>= (Object.keys(S.months).sort()[0]||ym) || m===ym);
-  const vals = months.map(m=>monthTotal(m)); const mx = niceMax(Math.max(...vals,1));
-  // categories
+// カテゴリ別（ドーナツと一覧）とよく使ったお店。月の表示と年の表示で共通
+function catPanel(txns, total){
   const by = {}; for (const t of txns) by[t.cat]=(by[t.cat]||0)+t.amount;
   const cats = Object.entries(by).filter(([,v])=>v!==0).sort((a,b)=>b[1]-a[1]);
   const psum = cats.reduce((s,[,v])=>s+Math.max(0,v),0);
   const cbars = cats.map(([c,v])=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${catIcon(c,22)}<b>${esc(catName(c))}</b></span><span class="v num">${yen(v)}<span>${v>0&&psum?Math.round(v/psum*100)+"%":"—"}</span></span></button>`).join("");
-  // shops
+  return `<section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2>${catDonut(cats, total)}<div class="cbars">${cbars}</div></section>`;
+}
+function shopPanel(txns){
   const bs = {}; for (const t of txns){ const k=t.name; (bs[k] ||= {v:0,n:0}); bs[k].v+=t.amount; bs[k].n++; }
   const shops = Object.entries(bs).sort((a,b)=>b[1].v-a[1].v).slice(0,6);
-  const heat = catTrend(ym);
-  const d = total - prev, dp = prev ? Math.round(d/prev*100) : null, prevN = (S.months[shiftYm(ym,-1)]||[]).length;
-  const pym = shiftYm(ym,-1), nym = shiftYm(ym,1), nTot = monthTotal(nym), nN = (S.months[nym]||[]).length;
-  const strip = `<section class="mstrip">
-      <button type="button" class="side prev" data-mnav="-1" aria-label="前の月（${ymLabel(pym)}）"><span class="ml">‹ ${Number(pym.slice(5))}月</span>${prevN?`<span class="mv num">${yen(prev)}</span>`:`<span class="mv none">データなし</span>`}</button>
-      <div class="center"><div class="lbl">${ymLabel(ym)}の支出</div><div class="val"><span class="yen">¥</span><span id="totv">${total.toLocaleString("ja-JP")}</span></div></div>
-      <button type="button" class="side next" data-mnav="1" aria-label="次の月（${ymLabel(nym)}）"><span class="ml">${Number(nym.slice(5))}月 ›</span>${nN?`<span class="mv num">${yen(nTot)}</span>`:`<span class="mv none">データなし</span>`}</button>
+  return `<section class="panel"><h2>よく使ったお店<small>金額順</small></h2><ul class="shops">${shops.map(([n,o])=>`<li><span>${esc(n)}<span class="c">${o.n}回</span></span><span class="num">${yen(o.v)}</span></li>`).join("")}</ul></section>`;
+}
+function stripHtml(step, label, pLabel, pAria, pVal, pHas, nLabel, nAria, nVal, nHas, total){
+  return `<section class="mstrip">
+      <button type="button" class="side prev" data-mnav="${-step}" aria-label="${pAria}"><span class="ml">‹ ${pLabel}</span>${pHas?`<span class="mv num">${yen(pVal)}</span>`:`<span class="mv none">データなし</span>`}</button>
+      <div class="center"><div class="lbl">${label}の支出</div><div class="val"><span class="yen">¥</span><span id="totv">${total.toLocaleString("ja-JP")}</span></div></div>
+      <button type="button" class="side next" data-mnav="${step}" aria-label="${nAria}"><span class="ml">${nLabel} ›</span>${nHas?`<span class="mv num">${yen(nVal)}</span>`:`<span class="mv none">データなし</span>`}</button>
     </section>`;
-  $view.innerHTML = strip + (!txns.length ? `<div class="panel empty">${ymLabel(ym)}の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
+}
+const segHtml = () => `<div class="seg" role="group" aria-label="集計の単位">${[["month","月"],["year","年"]].map(([k,l])=>`<button type="button" data-ov="${k}" aria-pressed="${S.ov===k}">${l}</button>`).join("")}</div>`;
+const yearMonths = y => Array.from({length:12},(_,i)=>`${y}-${String(i+1).padStart(2,"0")}`);
+
+function renderYear(){
+  const ym = S.month, y = Number(ym.slice(0,4)), yms = yearMonths(y);
+  const txns = yms.flatMap(m => S.months[m]||[]);
+  const vals = yms.map(monthTotal), total = vals.reduce((a,b)=>a+b,0);
+  const has = yms.filter(m => (S.months[m]||[]).length);
+  const avg = has.length ? Math.round(total/has.length) : 0;
+  const yTot = yy => yearMonths(yy).reduce((s,m)=>s+monthTotal(m),0), yHas = yy => yearMonths(yy).some(m => (S.months[m]||[]).length);
+  // 前年同期比：今年データのある月と同じ月どうしで比べる
+  const prevSame = has.reduce((s,m)=>s+monthTotal(shiftYm(m,-12)),0), prevSameHas = has.some(m => (S.months[shiftYm(m,-12)]||[]).length);
+  const d = total - prevSame, dp = prevSame ? Math.round(d/prevSame*100) : null;
+  const strip = stripHtml(12, `${y}年`, `${y-1}年`, `前の年（${y-1}年）`, yTot(y-1), yHas(y-1), `${y+1}年`, `次の年（${y+1}年）`, yTot(y+1), yHas(y+1), total);
+  $view.innerHTML = segHtml() + strip + (!txns.length ? `<div class="panel empty">${y}年の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
     <div class="meta solo">
       <span><b class="num">${txns.length}</b> 件</span>
-      ${prev && prevN>=5 ? `<span>前月比 <b class="num delta ${d>0?"up":"down"}">${d>0?"▲":"▼"} ${yen(Math.abs(d))}（${dp>0?"+":""}${dp}%）</b></span>` : ""}
-      ${unc.length ? `<button type="button" class="chip" data-fcat="none">未分類 ${unc.length}件 を確認</button>` : ""}
+      <span>月平均 <b class="num">${yen(avg)}</b>（${has.length}か月）</span>
+      ${prevSameHas && prevSame ? `<span>前年同期比 <b class="num delta ${d>0?"up":"down"}">${d>0?"▲":"▼"} ${yen(Math.abs(d))}（${dp>0?"+":""}${dp}%）</b></span>` : ""}
     </div>
     <div class="grid g2">
-      <section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2>${catDonut(cats, total)}<div class="cbars">${cbars}</div></section>
-      <section class="panel"><h2>月別の支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
-      ${heat}
-      <section class="panel"><h2>よく使ったお店<small>金額順</small></h2><ul class="shops">${shops.map(([n,o])=>`<li><span>${esc(n)}<span class="c">${o.n}回</span></span><span class="num">${yen(o.v)}</span></li>`).join("")}</ul></section>
+      ${catPanel(txns, total)}
+      <section class="panel"><h2>${y}年の月ごとの支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", yms, vals, ym, avg)}</section>
+      ${shopPanel(txns)}
     </div>`);
+  return total;
+}
+
+function renderOverview(){
+  const total = S.ov==="year" ? renderYear() : renderMonth();
   const tv = document.getElementById("totv");
   if (tv){ if (nextAnim) countUp(tv, shownTotal, total); shownTotal = total; }
   const ch = document.getElementById("chips"), on = ch && ch.querySelector('[aria-pressed="true"]');
   if (on) ch.scrollLeft = on.offsetLeft - ch.offsetLeft - 18;
   if (growCat){ const ct = document.getElementById("ctrend"); if (ct && !reduceMotion()) ct.classList.add("grow"); growCat = false; }
   for (const tr of document.querySelectorAll(".trend")) bindTip(tr);
-  return;
+}
+function renderMonth(){
+  const ym = S.month, txns = S.months[ym]||[];
+  const total = monthTotal(ym), prev = monthTotal(shiftYm(ym,-1));
+  const unc = txns.filter(t=>t.cat===NONE);
+  const months = Array.from({length:12},(_,i)=>shiftYm(ym,i-11)).filter(m => m>= (Object.keys(S.months).sort()[0]||ym) || m===ym);
+  const vals = months.map(m=>monthTotal(m));
+  const heat = catTrend(ym);
+  const d = total - prev, dp = prev ? Math.round(d/prev*100) : null, prevN = (S.months[shiftYm(ym,-1)]||[]).length;
+  const pym = shiftYm(ym,-1), nym = shiftYm(ym,1), nTot = monthTotal(nym), nN = (S.months[nym]||[]).length;
+  const strip = stripHtml(1, ymLabel(ym), `${Number(pym.slice(5))}月`, `前の月（${ymLabel(pym)}）`, prev, prevN, `${Number(nym.slice(5))}月`, `次の月（${ymLabel(nym)}）`, nTot, nN, total);
+  $view.innerHTML = segHtml() + strip + (!txns.length ? `<div class="panel empty">${ymLabel(ym)}の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
+    <div class="meta solo">
+      <span><b class="num">${txns.length}</b> 件</span>
+      ${prev && prevN>=5 ? `<span>前月比 <b class="num delta ${d>0?"up":"down"}">${d>0?"▲":"▼"} ${yen(Math.abs(d))}（${dp>0?"+":""}${dp}%）</b></span>` : ""}
+      ${unc.length ? `<button type="button" class="chip" data-fcat="none">未分類 ${unc.length}件 を確認</button>` : ""}
+    </div>
+    <div class="grid g2">
+      ${catPanel(txns, total)}
+      <section class="panel"><h2>月別の支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
+      ${heat}
+      ${shopPanel(txns)}
+    </div>`);
+  return total;
 }
 function showTip(tr, c){
   tr.querySelector(".tip")?.remove(); const r = c.getBoundingClientRect(), tb = tr.getBoundingClientRect(), b = c.querySelector(".b").getBoundingClientRect();
@@ -905,7 +950,7 @@ document.getElementById("tabs").addEventListener("click", e => {
     const quick = Math.abs(dx)/(Date.now()-st) > 0.5 && Math.abs(dx) > 40;
     if (cancel || (Math.abs(dx) < 80 && !quick)){ setX(0, 180); setTimeout(()=>setX(0,0), 190); return; }   // 元に戻す
     const dir = dx < 0 ? 1 : -1;
-    S.month = shiftYm(S.month, dir); nextAnim = "month"; render();
+    S.month = shiftYm(S.month, dir*navStep()); nextAnim = "month"; render();
     if (reduceMotion()){ setX(0,0); return; }
     setX(dir*28, 0);                                             // 新しい月を進む向きから少しだけ
     requestAnimationFrame(() => requestAnimationFrame(() => { setX(0, 220); setTimeout(()=>setX(0,0), 230); }));
@@ -922,6 +967,7 @@ document.addEventListener("click", async e => {
   const go = t.closest("[data-go]"); if (go){ nextAnim="left"; window.scrollTo(0,0); S.tab = go.dataset.go; render(); return; }
   const fc = t.closest("[data-fcat]"); if (fc){ S.fCat = fc.dataset.fcat; S.q=""; S.tab="list"; nextAnim="left"; window.scrollTo(0,0); render(); return; }
   const tc = t.closest("[data-tcat]"); if (tc){ S.trendCat = tc.dataset.tcat; growCat = true; render(); return; }
+  const ov = t.closest("[data-ov]"); if (ov){ if (S.ov!==ov.dataset.ov){ S.ov = ov.dataset.ov; LS.set("kkb-ov", S.ov); nextAnim = "fade"; render(); } return; }
   const mn = t.closest("[data-mnav]"); if (mn){ S.month = shiftYm(S.month, +mn.dataset.mnav); nextAnim="month"; render(); return; }
   const col = t.closest(".col[data-ym]");
   if (col){ const tr = col.closest(".trend"); if (tr) showTip(tr, col); return; }
