@@ -777,13 +777,14 @@ function stripHtml(step, label, pLabel, pAria, pVal, pHas, nLabel, nAria, nVal, 
     </section>`;
 }
 // 月・年のプルダウンの選択肢（明細のある月・年と、今の月・年。新しい順）
+// 金額は付けない：iPhoneのプルダウンは幅が狭く、「2025年10月　¥123,456」が2行に折り返したため
 function monthOptions(cur){
   return [...new Set([...Object.keys(S.months), cur])].sort().reverse()
-    .map(m => `<option value="${m}"${m===cur?" selected":""}>${ymLabel(m)}　${yen(monthTotal(m))}</option>`).join("");
+    .map(m => `<option value="${m}"${m===cur?" selected":""}>${ymLabel(m)}</option>`).join("");
 }
-function yearOptions(cur, yTot){
+function yearOptions(cur){
   return [...new Set([...Object.keys(S.months).map(m=>Number(m.slice(0,4))), cur])].sort((a,b)=>b-a)
-    .map(y => `<option value="${y}"${y===cur?" selected":""}>${y}年　${yen(yTot(y))}</option>`).join("");
+    .map(y => `<option value="${y}"${y===cur?" selected":""}>${y}年</option>`).join("");
 }
 const segHtml = () => `<div class="seg" role="group" aria-label="集計の単位">${[["month","月"],["year","年"]].map(([k,l])=>`<button type="button" data-ov="${k}" aria-pressed="${S.ov===k}">${l}</button>`).join("")}</div>`;
 const yearMonths = y => Array.from({length:12},(_,i)=>`${y}-${String(i+1).padStart(2,"0")}`);
@@ -798,7 +799,7 @@ function renderYear(){
   // 前年同期比：今年データのある月と同じ月どうしで比べる
   const prevSame = has.reduce((s,m)=>s+monthTotal(shiftYm(m,-12)),0), prevSameHas = has.some(m => (S.months[shiftYm(m,-12)]||[]).length);
   const d = total - prevSame, dp = prevSame ? Math.round(d/prevSame*100) : null;
-  const strip = stripHtml(12, `${y}年`, `${y-1}年`, `前の年（${y-1}年）`, yTot(y-1), yHas(y-1), `${y+1}年`, `次の年（${y+1}年）`, yTot(y+1), yHas(y+1), total, yearOptions(y, yTot));
+  const strip = stripHtml(12, `${y}年`, `${y-1}年`, `前の年（${y-1}年）`, yTot(y-1), yHas(y-1), `${y+1}年`, `次の年（${y+1}年）`, yTot(y+1), yHas(y+1), total, yearOptions(y));
   $view.innerHTML = segHtml() + strip + (!txns.length ? `<div class="panel empty">${y}年の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
     <div class="meta solo">
       <span><b class="num">${txns.length}</b> 件</span>
