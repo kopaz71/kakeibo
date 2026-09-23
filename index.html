@@ -812,13 +812,19 @@ function catTrend(ym){
 
 // カテゴリ別（ドーナツと一覧）とよく使ったお店。月の表示と年の表示で共通
 /* ---------- 予算 ---------- */
-// その月のカテゴリ別予算：固定した金額を先に取り、残りを直近3か月（その月を含まない）の支出の割合で配分する
+// その月のカテゴリ別予算：固定した金額を先に取り、残りを直近6か月（その月を含まない・明細のある月）の支出の割合で配分する。
+// 単発の大きな出費（家電・旅行など）に引っ張られないよう、明細のある月が3か月以上なら、カテゴリごとにいちばん多い月を1つ除いて平均する
 function budgetAlloc(ym){
   const B = S.budget; if (!(B.total>0)) return null;
   const valid = new Set(S.cats.map(c=>c.id));
-  const base = [1,2,3].map(k=>shiftYm(ym,-k)).filter(m => (S.months[m]||[]).length);
+  const base = [1,2,3,4,5,6].map(k=>shiftYm(ym,-k)).filter(m => (S.months[m]||[]).length).reverse();   // 古い順
+  const per = {};   // per[カテゴリ][月の番号] = その月の合計
+  base.forEach((m,i) => { for (const t of S.months[m]) if (t.cat!==NONE && valid.has(t.cat)){ (per[t.cat] ||= Array(base.length).fill(0)); per[t.cat][i] += t.amount; } });
   const avg = {};
-  for (const m of base) for (const t of S.months[m]) if (t.cat!==NONE && valid.has(t.cat)) avg[t.cat] = (avg[t.cat]||0) + t.amount;
+  for (const [c,arr] of Object.entries(per)){
+    const sum = arr.reduce((a,b)=>a+b,0);
+    avg[c] = base.length>=3 ? (sum - Math.max(...arr)) / (base.length-1) : sum / base.length;
+  }
   const cats = {}; let fsum = 0;
   for (const [c,v] of Object.entries(B.fixed)) if (valid.has(c) && v>=0){ cats[c] = v; fsum += v; }   // 0で固定したカテゴリは自動配分から外れる
   const rest = Math.max(0, B.total - fsum);
@@ -829,7 +835,7 @@ function budgetAlloc(ym){
     for (const [c,v] of auto){ const a = Math.floor(rest*v/asum/100)*100; cats[c] = a; used += a; }   // 100円単位
     cats[auto[0][0]] += rest - used;                                                                    // 端数はいちばん多いカテゴリへ
   }
-  return { total: B.total, cats, base: base.length, over: fsum > B.total };
+  return { total: B.total, cats, base: base.length, baseMonths: base, over: fsum > B.total };
 }
 function budgetCard(spent, budget, label){
   const left = budget - spent, pct = budget>0 ? Math.min(100, Math.max(0, spent/budget*100)) : 100;
@@ -1083,7 +1089,7 @@ function aiSummary(n, withShops){
     const fx = Object.entries(S.budget.fixed).filter(([c]) => S.cats.some(x=>x.id===c));
     L.push("## 予算の設定", "", `- 月の予算：${yen(S.budget.total)}`,
       `- 金額を固定しているカテゴリ：${fx.length ? fx.map(([c,v])=>`${catName(c)} ${yen(v)}`).join("、") : "なし"}`,
-      "- それ以外のカテゴリは、直近3か月の支出の割合で自動配分しています", "");
+      "- それ以外のカテゴリは、直近6か月の支出の割合（各カテゴリのいちばん多い月を除く）で自動配分しています", "");
   }
   // お店（チェックがオンのときだけ）
   if (withShops && txns.length){
@@ -1111,13 +1117,14 @@ function aiPanel(){
 }
 function budgetPanel(){
   const B = S.budget, al = budgetAlloc(S.month);
-  const base = [3,2,1].map(k=>Number(shiftYm(S.month,-k).slice(5))+"月").join("・");
+  const bm = al ? al.baseMonths : [];
+  const baseNote = bm.length ? `（${bm.length>1 ? `${ymLabel(bm[0])}〜${ymLabel(bm[bm.length-1])}` : ymLabel(bm[0])}の${bm.length}か月の支出をもとに計算${bm.length>=3 ? "。各カテゴリのいちばん多い月は除く" : ""}）` : "";
   return `<section class="panel"><h2>予算<small>毎月同じ金額</small></h2>
       <form class="inline" id="budgetform"><input type="text" inputmode="numeric" id="btotal" placeholder="月の予算（例：200000）" value="${B.total||""}" aria-label="月の予算（円）"><button class="btn primary" type="submit">保存</button></form>
-      <p class="note">カテゴリ別の予算は、直近3か月の支出の割合で自動で配分します。家賃など決まった金額のカテゴリは、下に金額を入れると固定できます（空欄は自動）。0を入れると、そのカテゴリには予算を割り振りません。0か空欄で保存すると予算を使いません。</p>
-      ${al ? `<p class="note" style="margin-top:12px"><b>${ymLabel(S.month)}の配分</b>（${base}の支出をもとに計算）</p>
+      <p class="note">カテゴリ別の予算は、直近6か月の支出の割合で自動で配分します（カテゴリごとに、いちばん多かった月は1回だけの出費として除きます）。家賃など決まった金額のカテゴリは、下に金額を入れると固定できます（空欄は自動）。0を入れると、そのカテゴリには予算を割り振りません。0か空欄で保存すると予算を使いません。</p>
+      ${al ? `<p class="note" style="margin-top:12px"><b>${ymLabel(S.month)}の配分</b>${baseNote}</p>
         ${al.over ? `<p class="note" style="color:var(--danger)">固定した金額の合計が、月の予算を超えています。</p>` : ""}
-        ${!al.base ? `<p class="note">直近3か月の明細がないため、自動の配分はまだできません。</p>` : ""}
+        ${!al.base ? `<p class="note">直近6か月の明細がないため、自動の配分はまだできません。</p>` : ""}
         <div class="setlist">${S.cats.map(c=>`<div class="brow">${catIcon(c.id,24)}<span class="n">${esc(c.name)}</span>
           <input type="text" inputmode="numeric" data-bfix="${esc(c.id)}" value="${c.id in B.fixed ? B.fixed[c.id] : ""}" placeholder="自動 ${yen(al.cats[c.id]||0)}" aria-label="${esc(c.name)}の予算（空欄は自動）"></div>`).join("")}</div>` : ""}
     </section>`;
