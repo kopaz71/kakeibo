@@ -1,6 +1,6 @@
 // オフラインでも起動できるように、アプリ本体をスマホ内にキャッシュする。
 // 家計簿のデータ（明細）はここでは扱わない（ブラウザのローカル保存領域にある）。
-const CACHE = "kakeibo-v12";   // index.html などを更新したら数字を上げる
+const CACHE = "kakeibo-v13";   // index.html などを更新したら数字を上げる
 const FILES = ["./", "index.html", "manifest.json", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

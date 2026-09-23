@@ -670,7 +670,7 @@ function catTrend(ym){
   const avg = Math.round(vals.reduce((a,b)=>a+b,0)/months.length);
   const cur = sums[sel][ym]||0, prevYm = shiftYm(ym,-1), dv = cur - (sums[sel][prevYm]||0);
   const chips = cats.map(c=>`<button type="button" class="${c===NONE?"none":""}" data-tcat="${esc(c)}" aria-pressed="${c===sel}">${catIcon(c,20)}${esc(catName(c))}</button>`).join("");
-  return `<section class="panel"><h2>カテゴリ別の推移<small>棒をタップで明細へ</small></h2>
+  return `<section class="panel"><h2>カテゴリ別の推移<small>棒をタップで金額を表示</small></h2>
     <div class="chips" id="chips">${chips}</div>
     <div class="ctsum"><span>${Number(ym.slice(5))}月 <b class="num">${yen(cur)}</b></span>
       ${months.includes(prevYm) ? `<span>前月差 <b class="num ${dv>0?"up":dv<0?"down":""}">${dv>0?"▲":dv<0?"▼":"±"}${yen(Math.abs(dv))}</b></span>` : ""}
@@ -710,7 +710,7 @@ function renderOverview(){
     </div>
     <div class="grid g2">
       <section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2>${catDonut(cats, total)}<div class="cbars">${cbars}</div></section>
-      <section class="panel"><h2>月別の支出<small>棒をタップで明細へ</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
+      <section class="panel"><h2>月別の支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
       ${heat}
       <section class="panel"><h2>よく使ったお店<small>金額順</small></h2><ul class="shops">${shops.map(([n,o])=>`<li><span>${esc(n)}<span class="c">${o.n}回</span></span><span class="num">${yen(o.v)}</span></li>`).join("")}</ul></section>
     </div>`);
@@ -722,15 +722,15 @@ function renderOverview(){
   for (const tr of document.querySelectorAll(".trend")) bindTip(tr);
   return;
 }
+function showTip(tr, c){
+  tr.querySelector(".tip")?.remove(); const r = c.getBoundingClientRect(), tb = tr.getBoundingClientRect(), b = c.querySelector(".b").getBoundingClientRect();
+  const tip = document.createElement("div"); tip.className="tip"; tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(+c.dataset.v)}`;
+  let x = r.left - tb.left + r.width/2; x = Math.min(Math.max(x, 70), tb.width-70);
+  tip.style.left = x+"px"; tip.style.top = (b.top - tb.top - 6)+"px"; tr.appendChild(tip);
+}
 function bindTip(tr){
-  {
-    tr.addEventListener("pointerover", e => { const c = e.target.closest(".col"); if (!c) return;
-      tr.querySelector(".tip")?.remove(); const r = c.getBoundingClientRect(), tb = tr.getBoundingClientRect(), b = c.querySelector(".b").getBoundingClientRect();
-      const tip = document.createElement("div"); tip.className="tip"; tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(+c.dataset.v)}`;
-      let x = r.left - tb.left + r.width/2; x = Math.min(Math.max(x, 70), tb.width-70);
-      tip.style.left = x+"px"; tip.style.top = (b.top - tb.top - 6)+"px"; tr.appendChild(tip); });
-    tr.addEventListener("pointerleave", () => tr.querySelector(".tip")?.remove());
-  }
+  tr.addEventListener("pointerover", e => { const c = e.target.closest(".col"); if (c && e.pointerType==="mouse") showTip(tr, c); });
+  tr.addEventListener("pointerleave", e => { if (e.pointerType==="mouse") tr.querySelector(".tip")?.remove(); });
 }
 
 function catOptions(sel, withAuto){
@@ -893,13 +893,13 @@ document.getElementById("next").onclick = () => { S.month = shiftYm(S.month,1); 
 
 document.addEventListener("click", async e => {
   const t = e.target;
+  document.querySelectorAll(".trend .tip").forEach(x => x.remove());
   const go = t.closest("[data-go]"); if (go){ nextAnim="left"; window.scrollTo(0,0); S.tab = go.dataset.go; render(); return; }
   const fc = t.closest("[data-fcat]"); if (fc){ S.fCat = fc.dataset.fcat; S.q=""; S.tab="list"; nextAnim="left"; window.scrollTo(0,0); render(); return; }
   const tc = t.closest("[data-tcat]"); if (tc){ S.trendCat = tc.dataset.tcat; growCat = true; render(); return; }
   const mn = t.closest("[data-mnav]"); if (mn){ S.month = shiftYm(S.month, +mn.dataset.mnav); nextAnim="month"; render(); return; }
   const col = t.closest(".col[data-ym]");
-  if (col){ const tr = col.closest(".trend"); S.month = col.dataset.ym; S.fCat = (tr && tr.dataset.cat) || "all"; S.q="";
-    S.tab = "list"; nextAnim = "tab"; window.scrollTo(0,0); render(); return; }
+  if (col){ const tr = col.closest(".trend"); if (tr) showTip(tr, col); return; }
   const del = t.closest("[data-del]"); if (del){ delTxn(S.month, del.dataset.del); return; }
   const cd = t.closest("[data-cdel]");
   if (cd){ const id = cd.dataset.cdel;
