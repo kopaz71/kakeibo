@@ -42,6 +42,7 @@
   --shadow:0 1px 2px rgba(0,0,0,.3); --pig:#f0a3b8; --pig-ink:#4a1626;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
 .wrap{max-width:640px;margin:0 auto;padding-inline:max(16px, env(safe-area-inset-left, 0px));padding-block:calc(14px + env(safe-area-inset-top, 0px)) calc(96px + env(safe-area-inset-bottom, 0px))}
@@ -75,7 +76,8 @@ input,select,textarea{font-size:16px!important}
 .panel h2{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .panel h2 small{font-weight:400;color:var(--muted);font-size:12px}
 .grid{display:grid;gap:16px}
-.g2{grid-template-columns:1fr}
+.g2{grid-template-columns:minmax(0,1fr)}
+.grid>*{min-width:0}
 
 /* summary */
 .summary{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 32px;padding:4px 2px 20px}
@@ -202,54 +204,34 @@ details.add .addform{padding:12px;background:var(--surface-2);border-radius:10px
 /* piggy mark */
 .brand{align-items:center}
 .pig{width:30px;height:30px;flex:none}
-.pig ellipse,.pig path,.pig rect{fill:var(--pig)}
-.pig .slot{fill:var(--pig-ink)} .pig .eye{fill:var(--pig-ink)}
+.pig .bg{fill:#e8783a}.pig .pg{fill:#faf6ec}.pig .sp{fill:#e2d6be}.pig .ln{fill:#aaa091}.pig .pc{fill:#ffcd40}
 
-/* category x month table */
-.hmwrap{overflow-x:auto;margin-inline:-6px;padding-inline:6px;-webkit-overflow-scrolling:touch}
-.hm{border-collapse:separate;border-spacing:3px;min-width:100%;font-size:12px}
-.hm th{font-weight:500;color:var(--muted);text-align:right;padding:2px 6px;white-space:nowrap}
-.hm thead th.cur{color:var(--ink);font-weight:700}
-.hm tbody th,.hm tfoot th{position:sticky;left:0;z-index:2;background:var(--surface);text-align:left;color:var(--ink);font-weight:500;padding-left:0;max-width:6.5em;overflow:hidden;text-overflow:ellipsis}
-.hm td{position:relative;isolation:isolate;text-align:right;padding:7px 7px;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;border-radius:5px;cursor:pointer;min-width:4.6em}
-.hm td.v::before{content:"";position:absolute;inset:0;border-radius:5px;background:var(--bar);opacity:var(--a,0);z-index:-1}
-.hm td.v.cur{box-shadow:inset 0 0 0 1.5px var(--ink-2)}
-.hm td.zero{color:var(--muted)}
-.hm td.dl{cursor:default;font-size:11px;padding-left:10px}
-.hm td.dl.up{color:var(--danger)} .hm td.dl.down{color:var(--good)} .hm td.dl.eq{color:var(--muted)}
-.hm tfoot th,.hm tfoot td{border-top:1px solid var(--line);font-weight:700;color:var(--ink)}
-.hm tfoot td{cursor:default}
-.legend{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:8px}
-.legend i{display:inline-block;width:56px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--grid),var(--bar))}
+/* category trend */
+.chips{display:flex;gap:6px;overflow-x:auto;margin-inline:-18px;padding:2px 18px 10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+.chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.chips button.none[aria-pressed="false"]{color:var(--warn)}
+.ctsum{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--ink-2);margin:2px 0 16px}
+.ctsum b{color:var(--ink);font-weight:600}
+.ctsum .up{color:var(--danger)} .ctsum .down{color:var(--good)}
+.trend .avg{position:absolute;left:42px;right:0;border-top:1.5px dashed var(--ink-2);z-index:2;pointer-events:none;opacity:.7}
+.trend .avg span{position:absolute;right:0;top:-18px;font-size:10px;color:var(--ink-2);background:var(--surface);padding:0 4px;border-radius:3px;font-family:var(--mono)}
 
 /* motion */
-button{transition:transform .12s ease, background-color .15s}
+#view{touch-action:pan-y}
 @media (prefers-reduced-motion:no-preference){
-  button:active,.cbar:active,.hm td.v:active,.row:active{transform:scale(.97)}
-  .tabs button:active{transform:scale(.92)}
-  .tabs button[aria-selected="true"] svg{animation:pop .38s cubic-bezier(.3,1.6,.5,1)}
-  @keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.15) translateY(-2px)}100%{transform:none}}
-  #view.anim-fade{animation:vfade .32s ease-out}
-  #view.anim-left{animation:vleft .32s cubic-bezier(.2,.8,.2,1)}
-  #view.anim-right{animation:vright .32s cubic-bezier(.2,.8,.2,1)}
-  @keyframes vfade{from{opacity:0;transform:translateY(8px)}}
-  @keyframes vleft{from{opacity:0;transform:translateX(28px)}}
-  @keyframes vright{from{opacity:0;transform:translateX(-28px)}}
   #view.grow .cbar .fill{animation:gx .7s cubic-bezier(.2,.8,.2,1) both;transform-origin:left;animation-delay:calc(var(--i,0) * 45ms + 80ms)}
-  #view.grow .col .b{animation:gy .65s cubic-bezier(.2,.8,.2,1) both;transform-origin:bottom;animation-delay:calc(var(--i,0) * 35ms + 120ms)}
-  #view.grow .hm td.v::before{animation:hf .6s ease-out both;animation-delay:calc(var(--i,0) * 25ms + 150ms)}
+  #view.grow .col .b, .trend.grow .col .b{animation:gy .65s cubic-bezier(.2,.8,.2,1) both;transform-origin:bottom;animation-delay:calc(var(--i,0) * 35ms + 120ms)}
   @keyframes gx{from{transform:scaleX(0)}}
   @keyframes gy{from{transform:scaleY(0)}}
-  @keyframes hf{from{opacity:0}}
-  .monthnav .m.flip{animation:mflip .3s ease-out}
-  @keyframes mflip{from{opacity:0;transform:translateY(-6px)}}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand"><svg class="pig" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="15" cy="18" rx="11" ry="8.5"/><path d="M8 12.5 7 6.5l5.5 3.6z"/><rect x="24" y="15" width="5.5" height="6" rx="2.4"/><rect x="8.5" y="23" width="3.6" height="5.5" rx="1.4"/><rect x="18" y="23" width="3.6" height="5.5" rx="1.4"/><rect x="12" y="10.4" width="7" height="1.8" rx=".9" class="slot"/><circle cx="21" cy="15.5" r="1.2" class="eye"/></svg><h1>カード明細家計簿</h1></div>
+    <div class="brand"><svg class="pig" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="7" class="bg"/><rect x="8" y="6" width="15" height="20" rx="1.6" class="pg"/><rect x="8" y="6" width="2.6" height="20" class="sp"/><rect x="12.5" y="10" width="6" height="1.3" rx=".6" class="ln"/><rect x="12.5" y="14" width="6" height="1.3" rx=".6" class="ln"/><rect x="12.5" y="18" width="6" height="1.3" rx=".6" class="ln"/><path d="M14 22.5 24.5 12l2.6 2.6-10.5 10.5-3.4.8z" class="pc"/></svg><h1>カード明細家計簿</h1></div>
     <div class="monthnav" role="group" aria-label="表示する月">
       <button id="prev" type="button" aria-label="前の月">‹</button>
       <div class="m" id="mlabel"></div>
@@ -530,7 +512,7 @@ function niceMax(v){ if (v<=0) return 10000; const p = Math.pow(10, Math.floor(M
 /* ---------- render ---------- */
 const $view = document.getElementById("view");
 const TAB_ORDER = ["overview","list","import","settings"];
-let nextAnim = "fade", shownTotal = 0;
+let nextAnim = "fade", shownTotal = 0, growCat = false;
 const reduceMotion = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(e){ return false; } };
 function countUp(el, from, to){
   const fmt = v => Math.round(v).toLocaleString("ja-JP");
@@ -540,7 +522,7 @@ function countUp(el, from, to){
     el.textContent = fmt(from + (to-from)*e); if (p<1 && el.isConnected) requestAnimationFrame(step); };
   el.textContent = fmt(from); requestAnimationFrame(step);
 }
-function flipMonth(){ const m = document.getElementById("mlabel"); m.classList.remove("flip"); void m.offsetWidth; if (!reduceMotion()) m.classList.add("flip"); }
+function flipMonth(){}
 function render(){
   if (!S.month) S.month = latestMonth() || new Date().toISOString().slice(0,7);
   document.getElementById("mlabel").textContent = ymLabel(S.month);
@@ -552,39 +534,38 @@ function render(){
     ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : "";
   document.getElementById("store").textContent =
     "データはこのスマホの中だけに保存され、外部には送信されません。念のため、月に一度「設定 → バックアップ」で書き出しておいてください。";
-  $view.classList.remove("anim-fade","anim-left","anim-right","grow");
+  $view.classList.remove("grow");
   ({overview:renderOverview, list:renderList, import:renderImport, settings:renderSettings}[S.tab] || renderOverview)();
-  if (nextAnim && !reduceMotion()){ void $view.offsetWidth; $view.classList.add("anim-"+nextAnim, "grow"); }
+  if (nextAnim && !reduceMotion()){ void $view.offsetWidth; $view.classList.add("grow"); }
   nextAnim = null;
 }
 
-function heatmap(ym){
+function trendChart(id, months, vals, cur, avg){
+  const mx = niceMax(Math.max(...vals, avg||0, 1));
+  const grid = [0,.5,1].map(f=>`<div class="gl${f===0?" base":""}" style="bottom:calc(22px + ${f} * (100% - 22px))"><span>${f? short(mx*f):"0"}</span></div>`).join("");
+  const cols = months.map((m,i)=>`<button type="button" class="col${m===cur?" cur":""}" data-ym="${m}" data-v="${vals[i]}" aria-label="${ymLabel(m)} ${yen(vals[i])}"><div class="b" style="height:${Math.max(0,vals[i])/mx*100}%;--i:${i}"></div><span class="x">${Number(m.slice(5))}月</span></button>`).join("");
+  const av = avg ? `<div class="avg" style="bottom:calc(22px + ${avg/mx} * (100% - 22px))"><span>平均 ${short(avg)}</span></div>` : "";
+  return `<div class="trend" id="${id}">${grid}${av}<div class="cols">${cols}</div></div>`;
+}
+function catTrend(ym){
   const first = Object.keys(S.months).sort()[0] || ym;
-  const months = Array.from({length:6},(_,i)=>shiftYm(ym,i-5)).filter(m => m>=first || m===ym);
-  if (months.length < 2) return "";
-  const sums = {}; // cat -> {ym: v}
+  const months = Array.from({length:12},(_,i)=>shiftYm(ym,i-11)).filter(m => m>=first || m===ym);
+  const sums = {};
   for (const m of months) for (const t of (S.months[m]||[])) { (sums[t.cat] ||= {}); sums[t.cat][m] = (sums[t.cat][m]||0) + t.amount; }
-  const prevYm = shiftYm(ym,-1);
-  const rows = Object.keys(sums).filter(c => months.some(m => sums[c][m]))
+  const cats = Object.keys(sums).filter(c => months.some(m => sums[c][m]))
     .sort((a,b) => (sums[b][ym]||0)-(sums[a][ym]||0) || months.reduce((s,m)=>s+(sums[b][m]||0)-(sums[a][m]||0),0));
-  let k = 0;
-  const body = rows.map(c => {
-    const vs = months.map(m => sums[c][m]||0), mx = Math.max(...vs, 1);
-    const cells = months.map((m,i) => { const v = vs[i];
-      return `<td class="v${m===ym?" cur":""}${v?"":" zero"}" data-hm="${m}|${esc(c)}" style="--a:${v>0?(0.12+0.5*v/mx).toFixed(2):0};--i:${k++}" aria-label="${ymLabel(m)} ${esc(catName(c))} ${yen(v)}">${v?v.toLocaleString("ja-JP"):"–"}</td>`; }).join("");
-    const dv = (sums[c][ym]||0) - (sums[c][prevYm]||0);
-    const dl = months.includes(prevYm) ? `<td class="dl ${dv>0?"up":dv<0?"down":"eq"}">${dv>0?"▲":dv<0?"▼":"±"}${Math.abs(dv).toLocaleString("ja-JP")}</td>` : "";
-    return `<tr><th>${esc(catName(c))}</th>${cells}${dl}</tr>`;
-  }).join("");
-  const tots = months.map(m => monthTotal(m));
-  const tdv = monthTotal(ym) - monthTotal(prevYm);
-  return `<section class="panel"><h2>カテゴリ別の推移<small>直近${months.length}か月・タップで明細へ</small></h2>
-    <div class="hmwrap" id="hmwrap"><table class="hm">
-      <thead><tr><th></th>${months.map(m=>`<th class="${m===ym?"cur":""}">${Number(m.slice(5))}月</th>`).join("")}${months.includes(prevYm)?"<th>前月差</th>":""}</tr></thead>
-      <tbody>${body}</tbody>
-      <tfoot><tr><th>合計</th>${tots.map(v=>`<td>${v.toLocaleString("ja-JP")}</td>`).join("")}${months.includes(prevYm)?`<td class="dl ${tdv>0?"up":tdv<0?"down":"eq"}">${tdv>0?"▲":tdv<0?"▼":"±"}${Math.abs(tdv).toLocaleString("ja-JP")}</td>`:""}</tr></tfoot>
-    </table></div>
-    <div class="legend"><span>少</span><i></i><span>多</span><span style="margin-left:auto">色の濃さはカテゴリごとの6か月内の比較</span></div>
+  if (!cats.length) return "";
+  const sel = cats.includes(S.trendCat) ? S.trendCat : cats[0];
+  const vals = months.map(m => sums[sel][m]||0);
+  const avg = Math.round(vals.reduce((a,b)=>a+b,0)/months.length);
+  const cur = sums[sel][ym]||0, prevYm = shiftYm(ym,-1), dv = cur - (sums[sel][prevYm]||0);
+  const chips = cats.map(c=>`<button type="button" class="${c===NONE?"none":""}" data-tcat="${esc(c)}" aria-pressed="${c===sel}">${esc(catName(c))}</button>`).join("");
+  return `<section class="panel"><h2>カテゴリ別の推移<small>カテゴリを選んでください</small></h2>
+    <div class="chips" id="chips">${chips}</div>
+    <div class="ctsum"><span>${Number(ym.slice(5))}月 <b class="num">${yen(cur)}</b></span>
+      ${months.includes(prevYm) ? `<span>前月差 <b class="num ${dv>0?"up":dv<0?"down":""}">${dv>0?"▲":dv<0?"▼":"±"}${yen(Math.abs(dv))}</b></span>` : ""}
+      <span>${months.length}か月平均 <b class="num">${yen(avg)}</b></span></div>
+    ${trendChart("ctrend", months, vals, ym, avg)}
   </section>`;
 }
 
@@ -595,8 +576,6 @@ function renderOverview(){
   // trend
   const months = Array.from({length:12},(_,i)=>shiftYm(ym,i-11)).filter(m => m>= (Object.keys(S.months).sort()[0]||ym) || m===ym);
   const vals = months.map(m=>monthTotal(m)); const mx = niceMax(Math.max(...vals,1));
-  const grid = [0,.5,1].map(f=>`<div class="gl${f===0?" base":""}" style="bottom:calc(22px + ${f} * (100% - 22px))"><span>${f? short(mx*f):"0"}</span></div>`).join("");
-  const cols = months.map((m,i)=>`<button type="button" class="col${m===ym?" cur":""}" data-ym="${m}" data-v="${vals[i]}" aria-label="${ymLabel(m)} ${yen(vals[i])}"><div class="b" style="height:${vals[i]/mx*100}%;--i:${i}"></div><span class="x">${Number(m.slice(5))}月</span></button>`).join("");
   // categories
   const by = {}; for (const t of txns) by[t.cat]=(by[t.cat]||0)+t.amount;
   const cats = Object.entries(by).filter(([,v])=>v!==0).sort((a,b)=>b[1]-a[1]);
@@ -605,7 +584,7 @@ function renderOverview(){
   // shops
   const bs = {}; for (const t of txns){ const k=t.name; (bs[k] ||= {v:0,n:0}); bs[k].v+=t.amount; bs[k].n++; }
   const shops = Object.entries(bs).sort((a,b)=>b[1].v-a[1].v).slice(0,6);
-  const heat = heatmap(ym);
+  const heat = catTrend(ym);
   const d = total - prev, dp = prev ? Math.round(d/prev*100) : null, prevN = (S.months[shiftYm(ym,-1)]||[]).length;
   $view.innerHTML = !txns.length ? `<div class="panel empty">${ymLabel(ym)}の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
     <section class="summary">
@@ -619,15 +598,20 @@ function renderOverview(){
     </section>
     <div class="grid g2">
       <section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2><div class="cbars">${cbars}</div></section>
+      <section class="panel"><h2>月別の支出<small>直近12か月・合計</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
       ${heat}
-      <section class="panel"><h2>月別の支出<small>直近12か月</small></h2><div class="trend" id="trend">${grid}<div class="cols">${cols}</div></div></section>
       <section class="panel"><h2>よく使ったお店<small>金額順</small></h2><ul class="shops">${shops.map(([n,o])=>`<li><span>${esc(n)}<span class="c">${o.n}回</span></span><span class="num">${yen(o.v)}</span></li>`).join("")}</ul></section>
     </div>`;
   const tv = document.getElementById("totv");
   if (tv){ if (nextAnim) countUp(tv, shownTotal, total); shownTotal = total; }
-  const hw = document.getElementById("hmwrap"); if (hw) hw.scrollLeft = hw.scrollWidth;
-  const tr = document.getElementById("trend");
-  if (tr){
+  const ch = document.getElementById("chips"), on = ch && ch.querySelector('[aria-pressed="true"]');
+  if (on) ch.scrollLeft = on.offsetLeft - ch.offsetLeft - 18;
+  if (growCat){ const ct = document.getElementById("ctrend"); if (ct && !reduceMotion()) ct.classList.add("grow"); growCat = false; }
+  for (const tr of document.querySelectorAll(".trend")) bindTip(tr);
+  return;
+}
+function bindTip(tr){
+  {
     tr.addEventListener("pointerover", e => { const c = e.target.closest(".col"); if (!c) return;
       tr.querySelector(".tip")?.remove(); const r = c.getBoundingClientRect(), tb = tr.getBoundingClientRect(), b = c.querySelector(".b").getBoundingClientRect();
       const tip = document.createElement("div"); tip.className="tip"; tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(+c.dataset.v)}`;
@@ -740,13 +724,31 @@ function renderSettings(){
 }
 
 /* ---------- events ---------- */
+function goTab(tab){
+  if (!tab || tab===S.tab) return;
+  nextAnim = "tab"; window.scrollTo(0,0);
+  S.tab = tab; S.armed = null; try { localStorage.setItem("kkb-tab", S.tab); } catch(e){} render();
+}
 document.getElementById("tabs").addEventListener("click", e => {
-  const b = e.target.closest("[data-tab]"); if (!b) return;
-  if (b.dataset.tab===S.tab) return;
-  nextAnim = TAB_ORDER.indexOf(b.dataset.tab) > TAB_ORDER.indexOf(S.tab) ? "left" : "right";
-  window.scrollTo(0,0);
-  S.tab = b.dataset.tab; S.armed = null; try { localStorage.setItem("kkb-tab", S.tab); } catch(e){} render();
+  const b = e.target.closest("[data-tab]"); if (b) goTab(b.dataset.tab);
 });
+// 画面を左右にスワイプして月を切り替える（概要・明細のみ）
+(() => {
+  let sx=0, sy=0, st=0, ok=false;
+  document.addEventListener("touchstart", e => {
+    const t = e.touches[0];
+    ok = e.touches.length===1 && !e.target.closest("input,select,textarea,.chips,.tabs,.toast,.hmwrap");
+    sx=t.clientX; sy=t.clientY; st=Date.now();
+  }, {passive:true});
+  document.addEventListener("touchend", e => {
+    if (!ok) return; ok=false;
+    const t = e.changedTouches[0], dx = t.clientX-sx, dy = t.clientY-sy;
+    if (Date.now()-st > 700 || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)*1.5) return;
+    if (sx < 20 || sx > innerWidth-20) return; // 画面の端はOSの操作に任せる
+    if (S.tab!=="overview" && S.tab!=="list") return;
+    S.month = shiftYm(S.month, dx < 0 ? 1 : -1); nextAnim = "month"; render();
+  }, {passive:true});
+})();
 document.getElementById("prev").onclick = () => { S.month = shiftYm(S.month,-1); nextAnim = "right"; render(); flipMonth(); };
 document.getElementById("next").onclick = () => { S.month = shiftYm(S.month,1); nextAnim = "left"; render(); flipMonth(); };
 
@@ -754,7 +756,7 @@ document.addEventListener("click", async e => {
   const t = e.target;
   const go = t.closest("[data-go]"); if (go){ nextAnim="left"; window.scrollTo(0,0); S.tab = go.dataset.go; render(); return; }
   const fc = t.closest("[data-fcat]"); if (fc){ S.fCat = fc.dataset.fcat; S.q=""; S.tab="list"; nextAnim="left"; window.scrollTo(0,0); render(); return; }
-  const hm = t.closest("[data-hm]"); if (hm){ const [m,c] = hm.dataset.hm.split("|"); S.month=m; S.fCat=c; S.q=""; S.tab="list"; nextAnim="left"; window.scrollTo(0,0); render(); flipMonth(); return; }
+  const tc = t.closest("[data-tcat]"); if (tc){ S.trendCat = tc.dataset.tcat; growCat = true; render(); return; }
   const col = t.closest(".col[data-ym]"); if (col){ S.month = col.dataset.ym; nextAnim="fade"; render(); flipMonth(); return; }
   const del = t.closest("[data-del]"); if (del){ delTxn(S.month, del.dataset.del); return; }
   const cd = t.closest("[data-cdel]");
