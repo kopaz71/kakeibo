@@ -106,7 +106,7 @@ input,select,textarea{font-size:16px!important}
 
 /* category bars */
 .cbars{display:flex;flex-direction:column;gap:2px}
-.cbar{display:grid;grid-template-columns:6.5em 1fr auto;align-items:center;gap:10px;padding:5px 6px;border-radius:7px;border:0;background:transparent;text-align:left;cursor:pointer;width:100%}
+.cbar{display:grid;grid-template-columns:8.2em 1fr auto;align-items:center;gap:10px;padding:5px 6px;border-radius:7px;border:0;background:transparent;text-align:left;cursor:pointer;width:100%}
 .cbar:hover{background:var(--surface-2)}
 .cbar .n{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cbar .track{height:10px;background:var(--grid);border-radius:0 4px 4px 0;overflow:hidden}
@@ -169,7 +169,7 @@ input:focus,select:focus{border-color:var(--accent)}
   .row .nm{grid-area:nm}.row .a{grid-area:a}.row .icon-btn{grid-area:x}
   .row .d{grid-area:d}.row .cat{grid-area:c}
   .row.head{display:none}
-  .cbar{grid-template-columns:6em 1fr auto}.cbar .v{min-width:0}
+  .cbar{grid-template-columns:8.4em 1fr auto}.cbar .v{min-width:0}
 }
 
 .addform{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;align-items:end}
@@ -196,7 +196,7 @@ details.add .addform{padding:12px;background:var(--surface-2);border-radius:10px
 
 /* settings */
 .setlist{display:flex;flex-direction:column}
-.setrow{display:grid;grid-template-columns:minmax(0,1fr) 5em auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.setrow{display:grid;grid-template-columns:auto minmax(0,1fr) 4em auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
 .setrow:first-child{border-top:0}
 .setrow input{width:100%}
 .setrow .cnt{font-size:12px;color:var(--muted);text-align:right}
@@ -220,10 +220,24 @@ details.add .addform{padding:12px;background:var(--surface-2);border-radius:10px
 .pig{width:30px;height:30px;flex:none}
 .pig .bg{fill:#e8783a}.pig .pg{fill:#faf6ec}.pig .sp{fill:#e2d6be}.pig .ln{fill:#aaa091}.pig .pc{fill:#ffcd40}
 
+/* category icons */
+.ci{display:inline-grid;place-items:center;flex:none;width:var(--s,24px);height:var(--s,24px);border-radius:50%;background:var(--c,#6f7b75)}
+.ci svg{width:62%;height:62%;fill:none;stroke:#fff;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.cbar .n{display:flex;align-items:center;gap:8px;min-width:0}
+.cbar .n b{font-weight:400;overflow:hidden;text-overflow:ellipsis}
+.row .cat{display:flex;align-items:center;gap:8px;min-width:0}
+.row .cat select{flex:1;min-width:0}
+.iconbtn{border:0;background:transparent;padding:2px;border-radius:50%;cursor:pointer}
+.iconbtn .ci{--s:34px}
+.picker{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;padding:12px;background:var(--surface-2);border-radius:10px;margin-top:4px}
+.picker button{border:2px solid transparent;background:transparent;border-radius:50%;padding:3px;cursor:pointer;justify-self:center}
+.picker button[aria-pressed="true"]{border-color:var(--ink)}
+.picker .ci{--s:34px}
+
 /* category trend */
 .chips{display:flex;gap:6px;overflow-x:auto;margin-inline:-18px;padding:2px 18px 10px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chips button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;white-space:nowrap}
+.chips button{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:4px 12px 4px 5px;font-size:13px;cursor:pointer;white-space:nowrap}
 .chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
 .chips button.none[aria-pressed="false"]{color:var(--warn)}
 .ctsum{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--ink-2);margin:2px 0 16px}
@@ -273,7 +287,7 @@ const DEFAULT_CATS = [
   ["food","食費"],["eatout","外食"],["daily","日用品"],["transport","交通費"],["housing","住居費"],
   ["utility","水道光熱費"],["telecom","通信費"],["subsc","サブスク"],["hobby","趣味・娯楽"],
   ["medical","医療・健康"],["fashion","衣服・美容"],["social","交際費"],["edu","教養・書籍"],["other","その他"]
-].map(([id,name]) => ({id,name}));
+].map(([id,name]) => ({id,name,icon:null}));
 const DEFAULT_RULES = Object.entries({
   food:"セブン-イレブン,ファミリーマート,ローソン,ミニストップ,デイリーヤマザキ,イオン,イトーヨーカドー,西友,ライフ,まいばすけっと,業務スーパー,オーケー,成城石井,マルエツ,サミット",
   eatout:"ウーバーイーツ,出前館,マクドナルド,スターバックス,ドトール,タリーズ,すき家,吉野家,松屋,ガスト,サイゼリヤ,モスバーガー,ケンタッキー,スシロー,くら寿司",
@@ -288,6 +302,49 @@ const DEFAULT_RULES = Object.entries({
   fashion:"ユニクロ,しまむら,zara,h&m,美容室,ヘアサロン",
   edu:"紀伊國屋,丸善,ジュンク堂,蔦屋書店,ブックオフ,書店"
 }).flatMap(([cat,list]) => list.split(",").map(kw => ({kw, cat})));
+
+/* ---------- category icons ---------- */
+const ICONS = {
+  rice:["#e8913a","M4 11h16a8 8 0 0 1-16 0z M14 3l-3 6 M19 3l-5 6"],
+  utensils:["#e06c5a","M7 3v8 M5 3v4a2 2 0 0 0 4 0V3 M7 11v10 M17 3c-2 0-3 2-3 5s1 4 3 4v9"],
+  cart:["#d9822b","M3 4h2l2 11h11l2-8H6 M9 20h.01 M17 20h.01"],
+  bag:["#b98a1c","M5 8h14l-1 12H6z M9 8V6a3 3 0 0 1 6 0v2"],
+  train:["#3b82c4","M7 3h10a2 2 0 0 1 2 2v9a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V5a2 2 0 0 1 2-2z M5 10h14 M8 21l2-4 M16 21l-2-4 M9 13.5h.01 M15 13.5h.01"],
+  car:["#3f7fa8","M5 17h14v-5l-2-5H7l-2 5z M5 12h14 M7 17v2 M17 17v2 M8.5 14.5h.01 M15.5 14.5h.01"],
+  plane:["#2d8fd5","M3 12l18-8-7 17-2.5-6.5z M11.5 14.5L21 4"],
+  house:["#7a5bc2","M3 11l9-7 9 7 M5 10v10h14V10 M10 20v-5h4v5"],
+  bolt:["#c28a00","M13 2L5 14h6l-1 8 8-12h-6z"],
+  drop:["#2c8fbf","M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"],
+  phone:["#2f9e8f","M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M11 18h2"],
+  repeat:["#c2548a","M17 2l3 3-3 3 M4 11V9a4 4 0 0 1 4-4h12 M7 22l-3-3 3-3 M20 13v2a4 4 0 0 1-4 4H4"],
+  game:["#4a6fd1","M6 8h12a4 4 0 0 1 4 4v1a3 3 0 0 1-5.2 2L15 13H9l-1.8 2A3 3 0 0 1 2 13v-1a4 4 0 0 1 4-4z M7 10v4 M5 12h4 M15.5 11h.01 M17.5 13h.01"],
+  music:["#8a4fc4","M9 18V5l11-2v13 M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z M20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"],
+  film:["#4d5561","M4 5h16v14H4z M4 9.5h16 M4 14.5h16 M8 5v4.5 M16 5v4.5 M8 14.5V19 M16 14.5V19"],
+  cross:["#d64545","M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"],
+  heart:["#e0607e","M12 20s-8-5-8-10.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 2.5C20 15 12 20 12 20z"],
+  shirt:["#b86bc8","M8 3L3 6l2 4 3-1v12h8V9l3 1 2-4-5-3a4 4 0 0 1-8 0z"],
+  scissors:["#c46b9c","M6 3.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z M6 15.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z M8.2 7.2L20 18 M8.2 16.8L20 6"],
+  gift:["#e0689a","M3 8h18v4H3z M5 12v9h14v-9 M12 8v13 M12 8C10 4 6 4 6 6.5S10 8 12 8c2 0 6-.5 6-1.5S14 4 12 8"],
+  coffee:["#8b5e3c","M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z M17 9h1a3 3 0 0 1 0 6h-1 M8 2v3 M12 2v3"],
+  book:["#5b8c3a","M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"],
+  school:["#3d5a99","M2 9l10-5 10 5-10 5z M6 11v5c3 2 9 2 12 0v-5"],
+  paw:["#a6734a","M8 15c-2 2-1.5 5 1 5 1.5 0 2-1 3-1s1.5 1 3 1c2.5 0 3-3 1-5-1-1-2-2-4-2s-3 1-4 2z M5.5 10h.01 M9.5 6.5h.01 M14.5 6.5h.01 M18.5 10h.01"],
+  dumbbell:["#5561a8","M6 7v10 M18 7v10 M3 10v4 M21 10v4 M6 12h12"],
+  yen:["#b07d00","M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M9 7.5l3 4 3-4 M12 11.5V17 M9 12.5h6 M9 15h6"],
+  cake:["#e27d9b","M4 21h16v-8H4z M4 16.5c2 0 2-1 4-1s2 1 4 1 2-1 4-1 2 1 4 1 M12 13V9 M12 6h.01"],
+  tag:["#6f7b75","M3 12V4h8l10 10-8 8z M8 8h.01"],
+  dots:["#838a91","M6 12h.01 M12 12h.01 M18 12h.01"],
+  question:["#b4600a","M9 9a3 3 0 1 1 4 2.8c-.8.4-1 1-1 1.7 M12 17h.01"]
+};
+const PICKABLE = Object.keys(ICONS).filter(k => k!=="question");
+const DEFAULT_ICON = {food:"rice",eatout:"utensils",daily:"bag",transport:"train",housing:"house",utility:"bolt",telecom:"phone",
+  subsc:"repeat",hobby:"game",medical:"cross",fashion:"shirt",social:"gift",edu:"book",other:"dots"};
+const iconKey = id => id===NONE ? "question" : ((S.cats.find(c=>c.id===id)||{}).icon || DEFAULT_ICON[id] || "tag");
+function iconSvg(key, size){
+  const [c, d] = ICONS[key] || ICONS.tag;
+  return `<span class="ci" style="--c:${c}${size?`;--s:${size}px`:""}" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="${d}"/></svg></span>`;
+}
+const catIcon = (id, size) => iconSvg(iconKey(id), size);
 
 /* ---------- text helpers ---------- */
 const SMALL = {"ァ":"ア","ィ":"イ","ゥ":"ウ","ェ":"エ","ォ":"オ","ッ":"ツ","ャ":"ヤ","ュ":"ユ","ョ":"ヨ","ヮ":"ワ","ヵ":"カ","ヶ":"ケ"};
@@ -573,7 +630,7 @@ function catTrend(ym){
   const vals = months.map(m => sums[sel][m]||0);
   const avg = Math.round(vals.reduce((a,b)=>a+b,0)/months.length);
   const cur = sums[sel][ym]||0, prevYm = shiftYm(ym,-1), dv = cur - (sums[sel][prevYm]||0);
-  const chips = cats.map(c=>`<button type="button" class="${c===NONE?"none":""}" data-tcat="${esc(c)}" aria-pressed="${c===sel}">${esc(catName(c))}</button>`).join("");
+  const chips = cats.map(c=>`<button type="button" class="${c===NONE?"none":""}" data-tcat="${esc(c)}" aria-pressed="${c===sel}">${catIcon(c,20)}${esc(catName(c))}</button>`).join("");
   return `<section class="panel"><h2>カテゴリ別の推移<small>棒をタップで明細へ</small></h2>
     <div class="chips" id="chips">${chips}</div>
     <div class="ctsum"><span>${Number(ym.slice(5))}月 <b class="num">${yen(cur)}</b></span>
@@ -594,7 +651,7 @@ function renderOverview(){
   const by = {}; for (const t of txns) by[t.cat]=(by[t.cat]||0)+t.amount;
   const cats = Object.entries(by).filter(([,v])=>v!==0).sort((a,b)=>b[1]-a[1]);
   const cmax = Math.max(...cats.map(c=>c[1]),1);
-  const cbars = cats.map(([c,v],i)=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${esc(catName(c))}</span><span class="track"><span class="fill" style="display:block;width:${Math.max(0,v)/cmax*100}%;--i:${i}"></span></span><span class="v num">${yen(v)}<span>${total?Math.round(v/total*100):0}%</span></span></button>`).join("");
+  const cbars = cats.map(([c,v],i)=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${catIcon(c,22)}<b>${esc(catName(c))}</b></span><span class="track"><span class="fill" style="display:block;width:${Math.max(0,v)/cmax*100}%;--i:${i}"></span></span><span class="v num">${yen(v)}<span>${total?Math.round(v/total*100):0}%</span></span></button>`).join("");
   // shops
   const bs = {}; for (const t of txns){ const k=t.name; (bs[k] ||= {v:0,n:0}); bs[k].v+=t.amount; bs[k].n++; }
   const shops = Object.entries(bs).sort((a,b)=>b[1].v-a[1].v).slice(0,6);
@@ -667,7 +724,7 @@ function renderList(){
       ${shown.map(t=>`<div class="row" role="row">
         <span class="d">${t.date.slice(5).replace("-","/")}</span>
         <span class="nm"><span class="t">${esc(t.name)}</span>${t.src==="manual"?`<span class="tag">手入力</span>`:""}${t.memo?`<div class="memo">${esc(t.memo)}</div>`:""}</span>
-        <span class="cat"><select class="csel${t.cat===NONE?" unset":""}" data-id="${esc(t.id)}" aria-label="${esc(t.name)}のカテゴリ">${catOptions(t.cat)}</select></span>
+        <span class="cat">${catIcon(t.cat,26)}<select class="csel${t.cat===NONE?" unset":""}" data-id="${esc(t.id)}" aria-label="${esc(t.name)}のカテゴリ">${catOptions(t.cat)}</select></span>
         <span class="a num${t.amount<0?" neg":""}">${yen(t.amount)}</span>
         <button type="button" class="icon-btn" data-del="${esc(t.id)}" aria-label="${esc(t.name)}を削除">×</button>
       </div>`).join("")}
@@ -714,11 +771,13 @@ function renderSettings(){
         ${S.pendingImport ? `<div class="confirm"><span>「${esc(S.pendingImport.name)}」（明細${S.pendingImport.count}件）で置き換えますか？</span><button type="button" class="btn sm danger armed" id="restore-ok">置き換える</button><button type="button" class="btn sm" id="restore-no">やめる</button></div>` : ""}
         <div id="exportbox"></div>
 </section>
-      <section class="panel"><h2>カテゴリ<small>名前はその場で変更できます</small></h2>
+      <section class="panel"><h2>カテゴリ<small>丸をタップでアイコン変更</small></h2>
         <div class="setlist">${S.cats.map(c=>`<div class="setrow">
+          <button type="button" class="iconbtn" data-ipick="${esc(c.id)}" aria-label="${esc(c.name)}のアイコンを変える">${catIcon(c.id)}</button>
           <input type="text" id="cat-${esc(c.id)}" data-cname="${esc(c.id)}" value="${esc(c.name)}" aria-label="カテゴリ名">
           <span class="cnt num">${counts[c.id]||0}件</span>
-          <button type="button" class="btn sm danger${S.armed===c.id?" armed":""}" data-cdel="${esc(c.id)}">${S.armed===c.id?"本当に削除":"削除"}</button></div>`).join("")}</div>
+          <button type="button" class="btn sm danger${S.armed===c.id?" armed":""}" data-cdel="${esc(c.id)}">${S.armed===c.id?"本当に削除":"削除"}</button>
+          ${S.iconPick===c.id ? `<div class="picker" role="group" aria-label="アイコンを選ぶ">${PICKABLE.map(k=>`<button type="button" data-iset="${k}" aria-pressed="${k===iconKey(c.id)}">${iconSvg(k)}</button>`).join("")}</div>` : ""}</div>`).join("")}</div>
         <form class="inline" id="catform" style="margin-top:12px"><input type="text" id="newcat" placeholder="新しいカテゴリ名" required><button class="btn primary" type="submit">追加</button></form>
         <p class="note">カテゴリを削除すると、その明細は「未分類」に戻り、関連するルールも削除されます。</p>
       </section>
@@ -748,48 +807,47 @@ function goTab(tab){
 document.getElementById("tabs").addEventListener("click", e => {
   const b = e.target.closest("[data-tab]"); if (b) goTab(b.dataset.tab);
 });
-// 画面を左右にスワイプして月を切り替える（概要・明細のみ）。指に合わせて画面が動く
+// 画面を左右にスワイプして月を切り替える（概要・明細のみ）
+// ・横方向がはっきりしたときだけ反応（縦スクロール中は動かない）
+// ・指に少しだけついてくる控えめな動き（薄くはならない）
 (() => {
-  let sx=0, sy=0, st=0, ok=false, drag=false, dx=0;
+  let sx=0, sy=0, st=0, state="idle", dx=0;   // state: idle / wait / drag / scroll
   const monthTab = () => S.tab==="overview" || S.tab==="list";
-  const setX = (x, ms, op) => {
-    $view.style.transition = ms ? `transform ${ms}ms cubic-bezier(.2,.8,.2,1), opacity ${ms}ms` : "none";
+  const setX = (x, ms) => {
+    $view.style.transition = ms ? `transform ${ms}ms cubic-bezier(.25,.8,.25,1)` : "none";
     $view.style.transform = x ? `translateX(${x}px)` : "";
-    $view.style.opacity = op==null ? "" : op;
   };
-  const after = (ms, fn) => setTimeout(fn, ms);
+  const damp = d => Math.sign(d) * Math.min(Math.abs(d)*0.35, 56);   // 最大56pxまで
   document.addEventListener("touchstart", e => {
     const t = e.touches[0];
-    ok = e.touches.length===1 && monthTab() && !e.target.closest("input,select,textarea,.chips,.tabs,.toast,.top")
-         && t.clientX > 20 && t.clientX < innerWidth-20;   // 画面の端はOSの操作に任せる
-    sx=t.clientX; sy=t.clientY; st=Date.now(); drag=false; dx=0;
+    const ok = e.touches.length===1 && monthTab() && !e.target.closest("input,select,textarea,.chips,.tabs,.toast,.top")
+               && t.clientX > 24 && t.clientX < innerWidth-24;   // 画面の端はOSの操作に任せる
+    state = ok ? "wait" : "idle"; sx=t.clientX; sy=t.clientY; st=Date.now(); dx=0;
   }, {passive:true});
   document.addEventListener("touchmove", e => {
-    if (!ok) return;
+    if (state==="idle" || state==="scroll") return;
     const t = e.touches[0]; dx = t.clientX-sx; const dy = t.clientY-sy;
-    if (!drag){
-      if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { ok=false; return; }   // 縦スクロール
-      if (Math.abs(dx) < 12) return;
-      drag = true; document.querySelectorAll(".tip").forEach(x=>x.remove());
+    if (state==="wait"){
+      if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)*0.6) { state="scroll"; return; }   // 縦の動きが少しでも勝ったら縦スクロール扱い
+      if (Math.abs(dx) < 18 || Math.abs(dx) < Math.abs(dy)*2.2) return;                         // 横がはっきりするまで待つ
+      state = "drag"; document.querySelectorAll(".tip").forEach(x=>x.remove());
     }
-    if (!reduceMotion()) setX(dx*0.85, 0, 1 - Math.min(Math.abs(dx)/innerWidth, 1)*0.5);
-  }, {passive:true});
-  const end = () => {
-    if (!ok) return; ok=false;
-    if (!drag) return;
-    const fast = Math.abs(dx)/(Date.now()-st) > 0.45;
-    if (Math.abs(dx) < 70 && !(fast && Math.abs(dx) > 30)){ setX(0, 220); after(230, ()=>setX(0,0)); return; }   // 戻す
-    const dir = dx < 0 ? 1 : -1, W = innerWidth;
-    const go = () => { S.month = shiftYm(S.month, dir); nextAnim = "month"; render(); };
-    if (reduceMotion()){ setX(0,0); go(); return; }
-    setX(-dir*W, 180, 0);                                   // 今の月を画面外へ
-    after(180, () => {
-      go(); setX(dir*W*0.35, 0, 0);                          // 次の月を反対側に置いて
-      requestAnimationFrame(() => requestAnimationFrame(() => { setX(0, 260, 1); after(270, ()=>setX(0,0)); }));  // 中央へ
-    });
+    if (e.cancelable) e.preventDefault();       // 横スワイプ中は縦にスクロールさせない
+    if (!reduceMotion()) setX(damp(dx), 0);
+  }, {passive:false});
+  const finish = cancel => {
+    const was = state; state = "idle";
+    if (was!=="drag") return;
+    const quick = Math.abs(dx)/(Date.now()-st) > 0.5 && Math.abs(dx) > 40;
+    if (cancel || (Math.abs(dx) < 80 && !quick)){ setX(0, 180); setTimeout(()=>setX(0,0), 190); return; }   // 元に戻す
+    const dir = dx < 0 ? 1 : -1;
+    S.month = shiftYm(S.month, dir); nextAnim = "month"; render();
+    if (reduceMotion()){ setX(0,0); return; }
+    setX(dir*28, 0);                                             // 新しい月を進む向きから少しだけ
+    requestAnimationFrame(() => requestAnimationFrame(() => { setX(0, 220); setTimeout(()=>setX(0,0), 230); }));
   };
-  document.addEventListener("touchend", end, {passive:true});
-  document.addEventListener("touchcancel", () => { if (drag){ setX(0,200); after(210,()=>setX(0,0)); } ok=false; }, {passive:true});
+  document.addEventListener("touchend", () => finish(false), {passive:true});
+  document.addEventListener("touchcancel", () => finish(true), {passive:true});
 })();
 document.getElementById("prev").onclick = () => { S.month = shiftYm(S.month,-1); nextAnim = "right"; render(); flipMonth(); };
 document.getElementById("next").onclick = () => { S.month = shiftYm(S.month,1); nextAnim = "left"; render(); flipMonth(); };
@@ -810,6 +868,8 @@ document.addEventListener("click", async e => {
     S.armed=null; S.cats = S.cats.filter(c=>c.id!==id); S.rules = S.rules.filter(r=>r.cat!==id);
     for (const [m,arr] of Object.entries(S.months)) for (const x of arr) if (x.cat===id){ x.cat=NONE; x.locked=false; markDirty("m-"+m); }
     if (S.fCat===id) S.fCat="all"; markDirty("settings"); render(); return; }
+  const ip = t.closest("[data-ipick]"); if (ip){ S.iconPick = S.iconPick===ip.dataset.ipick ? null : ip.dataset.ipick; render(); return; }
+  const is = t.closest("[data-iset]"); if (is){ const c = S.cats.find(x=>x.id===S.iconPick); if (c){ c.icon = is.dataset.iset; markDirty("settings"); } S.iconPick = null; render(); return; }
   const rd = t.closest("[data-rdel]"); if (rd){ S.rules.splice(+rd.dataset.rdel,1); markDirty("settings"); render(); return; }
   if (t.id==="reapply"){ reapply(); return; }
   if (t.id==="reset"){
@@ -876,7 +936,7 @@ document.addEventListener("submit", e => {
     document.querySelector("details.add").open = true; document.getElementById("add-name").focus(); return;
   }
   if (f.id==="catform"){ const v = document.getElementById("newcat").value.trim(); if (!v) return;
-    S.cats.push({id:"c"+Date.now().toString(36), name:v}); markDirty("settings"); render(); return; }
+    S.cats.push({id:"c"+Date.now().toString(36), name:v, icon:"tag"}); markDirty("settings"); render(); return; }
   if (f.id==="ruleform"){ const kw = document.getElementById("newkw").value.trim(), cat = document.getElementById("newrc").value; if (!kw) return;
     const ex = S.rules.find(r=>mkey(r.kw)===mkey(kw)); if (ex) ex.cat=cat; else S.rules.push({kw,cat});
     markDirty("settings"); S.rq=""; render(); toast(`ルール「${kw} → ${catName(cat)}」を追加しました。「再適用」で既存の明細にも反映できます`); return; }
