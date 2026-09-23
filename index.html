@@ -114,7 +114,7 @@ input,select,textarea{font-size:16px!important}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
 
 /* category bars */
-.donut{position:relative;width:min(64vw,220px);aspect-ratio:1;margin:4px auto 14px}
+.donut{position:relative;width:min(52vw,190px);aspect-ratio:1;margin:2px auto 12px}
 .donut svg{display:block;width:100%;height:100%;transform:rotate(-90deg)}
 .donut circle{fill:none}
 .donut .bgr{stroke:var(--grid)}
@@ -132,9 +132,14 @@ input,select,textarea{font-size:16px!important}
 .bbar{height:8px;background:var(--grid);border-radius:4px;overflow:hidden}
 .bbar i{display:block;height:100%;background:var(--bar);border-radius:4px}
 .over .bbar i{background:var(--danger)}
-.cbar .bud{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding-left:30px;font-size:11px;color:var(--muted)}
-.cbar .bud .bbar{height:5px}
-.cbar .bud.over .num{color:var(--danger)}
+.cbar.hasb{grid-template-columns:minmax(0,7.8em) minmax(0,1fr) auto;gap:8px}
+.cbar .bbar{height:6px}
+.cbar .v{line-height:1.3}
+.cbar .v small.bs{display:block;font-size:11px;color:var(--muted);line-height:1.25}
+.cbar.over .v small.bs{color:var(--danger)}
+.catmore{display:block;width:100%;margin-top:4px;border:0;background:transparent;color:var(--accent);font-weight:700;font-size:13px;padding:8px;border-radius:10px;cursor:pointer}
+.catmore:hover{background:var(--surface-2)}
+.backbtn{display:inline-flex;align-items:center;gap:2px;border:0;background:transparent;color:var(--accent);font-weight:700;font-size:15px;padding:6px 2px;margin:-4px 0 8px;cursor:pointer}
 .brow{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,12em);gap:8px;align-items:center;padding:5px 0;border-top:1px solid var(--line)}
 .brow:first-child{border-top:0}
 .brow .n{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -823,10 +828,19 @@ function catPanel(txns, total, budgets){
   if (budgets) for (const [c,b] of Object.entries(budgets)) if (b>0 && !(c in by)) by[c] = 0;   // 予算があってまだ使っていないカテゴリも出す
   const cats = Object.entries(by).filter(([c,v])=>v!==0 || budgets?.[c]>0).sort((a,b)=>b[1]-a[1]);
   const psum = cats.reduce((s,[,v])=>s+Math.max(0,v),0);
-  const bud = (c,v) => { const b = budgets?.[c]; if (!(b>0)) return "";
-    return `<span class="bud${v>b?" over":""}"><span class="bbar"><i style="width:${Math.min(100, Math.max(0, v/b*100))}%"></i></span><span class="num">${v>b ? `▲${yen(v-b)}` : `残り ${yen(b-v)}`}<small> / ${yen(b)}</small></span></span>`; };
-  const cbars = cats.map(([c,v])=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${catIcon(c,22)}<b>${esc(catName(c))}</b></span><span class="v num">${yen(v)}<span>${v>0&&psum?Math.round(v/psum*100)+"%":"—"}</span></span>${bud(c,v)}</button>`).join("");
-  return `<section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2>${catDonut(cats, total)}<div class="cbars">${cbars}</div></section>`;
+  // 1行にまとめる：アイコンと名前｜予算のバー｜金額（その下に残り/▲。予算がなければ割合）
+  // 最初は上位5件だけ。予算を超えたカテゴリは必ず出す。残りは「ほか◯件を表示」で開く（S.catAll）
+  const TOP = 5; let hid = 0;
+  const cbars = cats.map(([c,v],i)=>{
+    const b = budgets?.[c]>0 ? budgets[c] : null, over = b!==null && v>b, hide = !S.catAll && i>=TOP && !over;
+    if (hide) hid++;
+    return `<button type="button" class="cbar${c===NONE?" none":""}${b!==null?" hasb":""}${over?" over":""}" data-fcat="${esc(c)}"${hide?" hidden":""} aria-label="${esc(catName(c))} ${yen(v)}${b!==null?`、予算 ${yen(b)}、${over?`${yen(v-b)}超過`:`残り ${yen(b-v)}`}`:""}">`
+      + `<span class="n">${catIcon(c,22)}<b>${esc(catName(c))}</b></span>`
+      + (b!==null ? `<span class="bbar"><i style="width:${Math.min(100, Math.max(0, v/b*100))}%"></i></span>` : "")
+      + `<span class="v num">${yen(v)}${b!==null ? `<small class="bs">${over?`▲${yen(v-b)}`:`残り ${yen(b-v)}`}</small>` : `<span>${v>0&&psum?Math.round(v/psum*100)+"%":"—"}</span>`}</span></button>`;
+  }).join("");
+  const more = hid ? `<button type="button" class="catmore" data-catall>ほか${hid}件を表示</button>` : (S.catAll && cats.length>TOP ? `<button type="button" class="catmore" data-catall>少なく表示</button>` : "");
+  return `<section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2>${catDonut(cats, total)}<div class="cbars">${cbars}</div>${more}</section>`;
 }
 function shopPanel(txns){
   const bs = {}; for (const t of txns){ const k=t.name; (bs[k] ||= {v:0,n:0}); bs[k].v+=t.amount; bs[k].n++; }
@@ -960,7 +974,7 @@ function listResults(){
 function renderList(){
   const ym = S.month;
   const today = new Date(); const def = ymOf(today.toISOString())===ym ? today.toISOString().slice(0,10) : ym+"-01";
-  $view.innerHTML = `
+  $view.innerHTML = `${S.backOv ? `<button type="button" class="backbtn" id="back-ov">‹ 概要に戻る</button>` : ""}
     <details class="add"><summary>現金などの支出を手入力する</summary>
       <form class="addform" id="addform">
         <label>日付<input type="date" id="add-date" value="${def}" required></label>
@@ -1077,8 +1091,11 @@ function showAppVersion(){
 /* ---------- events ---------- */
 function goTab(tab){
   if (!tab || tab===S.tab) return;
+  if (S.tab==="overview") S.ovY = window.scrollY;          // 概要を離れるときの位置を覚えておき、戻ったら復元する
+  if (tab!=="list") S.backOv = false;
   nextAnim = "tab"; window.scrollTo(0,0);
   S.tab = tab; S.armed = null; try { localStorage.setItem("kkb-tab", S.tab); } catch(e){} render();
+  if (tab==="overview" && S.ovY) window.scrollTo(0, S.ovY);
 }
 document.getElementById("tabs").addEventListener("click", e => {
   const b = e.target.closest("[data-tab]"); if (b) goTab(b.dataset.tab);
@@ -1137,7 +1154,11 @@ document.addEventListener("click", async e => {
     if (cur && cur.cat!==cs.dataset.cset) setCat(p.ym, p.id, cs.dataset.cset); return; }
   if (t.closest("[data-sclose]")){ closeSheet(); return; }
   const go = t.closest("[data-go]"); if (go){ nextAnim="left"; window.scrollTo(0,0); S.tab = go.dataset.go; render(); return; }
-  const fc = t.closest("[data-fcat]"); if (fc){ S.fCat = fc.dataset.fcat; S.q=""; S.tab="list"; nextAnim="left"; window.scrollTo(0,0); render(); return; }
+  const ca = t.closest("[data-catall]"); if (ca){ S.catAll = !S.catAll; render(); return; }
+  const fc = t.closest("[data-fcat]");
+  if (fc){ if (S.tab==="overview"){ S.ovY = window.scrollY; S.backOv = true; }   // 概要から来たときは「‹ 概要に戻る」を出し、戻ったら元の位置へ
+    S.fCat = fc.dataset.fcat; S.q=""; S.tab="list"; nextAnim="left"; window.scrollTo(0,0); render(); return; }
+  if (t.closest("#back-ov")){ S.backOv = false; goTab("overview"); return; }
   const tc = t.closest("[data-tcat]"); if (tc){ S.trendCat = tc.dataset.tcat; growCat = true; render(); return; }
   const ov = t.closest("[data-ov]"); if (ov){ if (S.ov!==ov.dataset.ov){ S.ov = ov.dataset.ov; LS.set("kkb-ov", S.ov); nextAnim = "fade"; render(); } return; }
   const mn = t.closest("[data-mnav]"); if (mn){ S.month = shiftYm(S.month, +mn.dataset.mnav); nextAnim="month"; render(); return; }
