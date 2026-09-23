@@ -794,7 +794,7 @@ function showTip(tr, c){
   tr.querySelector(".tip")?.remove(); const r = c.getBoundingClientRect(), tb = tr.getBoundingClientRect(), b = c.querySelector(".b").getBoundingClientRect();
   const tip = document.createElement("div"); tip.className="tip"; tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(+c.dataset.v)}`;
   let x = r.left - tb.left + r.width/2; x = Math.min(Math.max(x, 70), tb.width-70);
-  tip.style.left = x+"px"; tip.style.top = Math.max(b.top - tb.top - 6, 32)+"px";   // 見出しにかぶらないよう、背の高い棒では棒に重ねる
+  tip.style.left = x+"px"; tip.style.top = (b.top - tb.top - 6)+"px";   // 棒の先端の上に出す（背の高い棒では見出しにかぶってもよい）
   tr.appendChild(tip);
 }
 function bindTip(tr){
