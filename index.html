@@ -124,6 +124,21 @@ input,select,textarea{font-size:16px!important}
 .donut .ctr span{font-size:12px;color:var(--muted)}
 .donut .ctr b{font-size:clamp(17px,5.4vw,21px);font-weight:700;color:var(--ink)}
 .cbars{display:flex;flex-direction:column;gap:2px}
+/* 予算 */
+.budget{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 18px;margin-bottom:14px}
+.budget .bl{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;font-size:13px;color:var(--ink-2);margin-bottom:8px}
+.budget .bl b{color:var(--ink);font-weight:600}
+.budget.over .bl span:last-child,.budget.over .bl span:last-child b{color:var(--danger)}
+.bbar{height:8px;background:var(--grid);border-radius:4px;overflow:hidden}
+.bbar i{display:block;height:100%;background:var(--bar);border-radius:4px}
+.over .bbar i{background:var(--danger)}
+.cbar .bud{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding-left:30px;font-size:11px;color:var(--muted)}
+.cbar .bud .bbar{height:5px}
+.cbar .bud.over .num{color:var(--danger)}
+.brow{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,12em);gap:8px;align-items:center;padding:5px 0;border-top:1px solid var(--line)}
+.brow:first-child{border-top:0}
+.brow .n{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow input{width:100%;text-align:right}
 .cbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:5px 6px;border-radius:7px;border:0;background:transparent;text-align:left;cursor:pointer;width:100%}
 .cbar:hover{background:var(--surface-2)}
 .cbar .n{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -413,7 +428,8 @@ const uid = () => "t" + Date.now().toString(36) + Math.random().toString(36).sli
 const S = {
   cats: DEFAULT_CATS.map(c=>({...c})), rules: DEFAULT_RULES.map(r=>({...r})),
   months: {}, sample: true, month: null, tab: "overview",
-  fCat: "all", q: "", learn: true, importLog: null, armed: null, pendingImport: null, rq: ""
+  fCat: "all", q: "", learn: true, importLog: null, armed: null, pendingImport: null, rq: "",
+  budget: { total: 0, fixed: {} }   // 月の予算（total）と、手で固定したカテゴリの金額（fixed: {カテゴリid: 金額}）
 };
 try { const t = localStorage.getItem("kkb-tab"); if (t) S.tab = t; } catch(e){}
 const catName = id => id===NONE ? "未分類" : (S.cats.find(c=>c.id===id)?.name ?? "未分類");
@@ -466,7 +482,13 @@ function flush(){
   });
   return chain;
 }
-function settingsBody(){ return {v:2, cats:S.cats, rules:S.rules}; }
+function settingsBody(){ return {v:3, cats:S.cats, rules:S.rules, budget:S.budget}; }
+// 予算の読み込み（v3で追加。v2以前やバックアップに無いときは「予算なし」にする＝v3への移行）
+function normBudget(b){
+  const fixed = {};
+  if (b && b.fixed && typeof b.fixed==="object") for (const [c,v] of Object.entries(b.fixed)) if (Number(v)>0) fixed[c] = Math.round(Number(v));
+  return { total: b && Number(b.total)>0 ? Math.round(Number(b.total)) : 0, fixed };
+}
 async function writeDoc(id){
   if (store.mode==="db"){
     const ref = store.db.collection("data/users/"+store.uid).doc(id);
@@ -479,7 +501,7 @@ async function writeDoc(id){
   }
 }
 function applyLoaded(settings, months){
-  if (settings && Array.isArray(settings.cats)) { S.cats = settings.cats; S.rules = Array.isArray(settings.rules)?settings.rules:[]; }
+  if (settings && Array.isArray(settings.cats)) { S.cats = settings.cats; S.rules = Array.isArray(settings.rules)?settings.rules:[]; S.budget = normBudget(settings.budget); }
   if (months && Object.keys(months).length){ S.months = months; S.sample = false; S.month = latestMonth(); }
   if (settings && Array.isArray(settings.cats) && !(settings.v >= 2)) migrateV2();
 }
@@ -704,8 +726,9 @@ function render(){
   const unc = (S.months[S.month]||[]).filter(t=>t.cat===NONE).length;
   const nb = document.getElementById("nbadge"); nb.hidden = !unc; nb.textContent = unc;
   document.querySelector(".monthnav").hidden = S.tab!=="list";
-  document.getElementById("banner").innerHTML = S.sample
-    ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : backupBanner();
+  document.getElementById("banner").innerHTML = (S.updateReady
+    ? `<div class="banner"><span><b>新しい版があります。</b>「更新する」を押すと切り替わります（データはそのままです）。</span><button class="btn sm primary" type="button" id="app-update">更新する</button></div>` : "") + (S.sample
+    ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : backupBanner());
   document.getElementById("store").textContent =
     "データはこのスマホの中だけに保存され、外部には送信されません。念のため、月に一度「設定 → バックアップ」で書き出しておいてください。";
   $view.classList.remove("grow");
@@ -757,11 +780,42 @@ function catTrend(ym){
 }
 
 // カテゴリ別（ドーナツと一覧）とよく使ったお店。月の表示と年の表示で共通
-function catPanel(txns, total){
+/* ---------- 予算 ---------- */
+// その月のカテゴリ別予算：固定した金額を先に取り、残りを直近3か月（その月を含まない）の支出の割合で配分する
+function budgetAlloc(ym){
+  const B = S.budget; if (!(B.total>0)) return null;
+  const valid = new Set(S.cats.map(c=>c.id));
+  const base = [1,2,3].map(k=>shiftYm(ym,-k)).filter(m => (S.months[m]||[]).length);
+  const avg = {};
+  for (const m of base) for (const t of S.months[m]) if (t.cat!==NONE && valid.has(t.cat)) avg[t.cat] = (avg[t.cat]||0) + t.amount;
+  const cats = {}; let fsum = 0;
+  for (const [c,v] of Object.entries(B.fixed)) if (valid.has(c) && v>0){ cats[c] = v; fsum += v; }
+  const rest = Math.max(0, B.total - fsum);
+  const auto = Object.entries(avg).filter(([c,v]) => v>0 && !(c in cats)).sort((a,b)=>b[1]-a[1]);
+  const asum = auto.reduce((a,[,v])=>a+v, 0);
+  if (asum>0 && rest>0){
+    let used = 0;
+    for (const [c,v] of auto){ const a = Math.floor(rest*v/asum/100)*100; cats[c] = a; used += a; }   // 100円単位
+    cats[auto[0][0]] += rest - used;                                                                    // 端数はいちばん多いカテゴリへ
+  }
+  return { total: B.total, cats, base: base.length, over: fsum > B.total };
+}
+function budgetCard(spent, budget, label){
+  const left = budget - spent, pct = budget>0 ? Math.min(100, Math.max(0, spent/budget*100)) : 100;
+  return `<section class="budget${left<0?" over":""}">
+      <div class="bl"><span>${label} <b class="num">${yen(budget)}</b></span><span>${left>=0 ? `残り <b class="num">${yen(left)}</b>` : `<b class="num">${yen(-left)}</b> オーバー`}</span></div>
+      <div class="bbar" role="img" aria-label="予算の${Math.round(spent/budget*100)}%を使いました"><i style="width:${pct}%"></i></div>
+    </section>`;
+}
+
+function catPanel(txns, total, budgets){
   const by = {}; for (const t of txns) by[t.cat]=(by[t.cat]||0)+t.amount;
-  const cats = Object.entries(by).filter(([,v])=>v!==0).sort((a,b)=>b[1]-a[1]);
+  if (budgets) for (const [c,b] of Object.entries(budgets)) if (b>0 && !(c in by)) by[c] = 0;   // 予算があってまだ使っていないカテゴリも出す
+  const cats = Object.entries(by).filter(([c,v])=>v!==0 || budgets?.[c]>0).sort((a,b)=>b[1]-a[1]);
   const psum = cats.reduce((s,[,v])=>s+Math.max(0,v),0);
-  const cbars = cats.map(([c,v])=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${catIcon(c,22)}<b>${esc(catName(c))}</b></span><span class="v num">${yen(v)}<span>${v>0&&psum?Math.round(v/psum*100)+"%":"—"}</span></span></button>`).join("");
+  const bud = (c,v) => { const b = budgets?.[c]; if (!(b>0)) return "";
+    return `<span class="bud${v>b?" over":""}"><span class="bbar"><i style="width:${Math.min(100, Math.max(0, v/b*100))}%"></i></span><span class="num">${v>b ? `${yen(v-b)} オーバー` : `残り ${yen(b-v)}`}<small> / ${yen(b)}</small></span></span>`; };
+  const cbars = cats.map(([c,v])=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${catIcon(c,22)}<b>${esc(catName(c))}</b></span><span class="v num">${yen(v)}<span>${v>0&&psum?Math.round(v/psum*100)+"%":"—"}</span></span>${bud(c,v)}</button>`).join("");
   return `<section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2>${catDonut(cats, total)}<div class="cbars">${cbars}</div></section>`;
 }
 function shopPanel(txns){
@@ -800,14 +854,18 @@ function renderYear(){
   const prevSame = has.reduce((s,m)=>s+monthTotal(shiftYm(m,-12)),0), prevSameHas = has.some(m => (S.months[shiftYm(m,-12)]||[]).length);
   const d = total - prevSame, dp = prevSame ? Math.round(d/prevSame*100) : null;
   const strip = stripHtml(12, `${y}年`, `${y-1}年`, `前の年（${y-1}年）`, yTot(y-1), yHas(y-1), `${y+1}年`, `次の年（${y+1}年）`, yTot(y+1), yHas(y+1), total, yearOptions(y));
-  $view.innerHTML = segHtml() + strip + (!txns.length ? `<div class="panel empty">${y}年の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
+  // 年の予算：明細のある月の分だけ（その月ごとの配分を足し合わせる）
+  let ybud = null, ycats = null;
+  if (S.budget.total>0 && has.length){ ybud = S.budget.total*has.length; ycats = {};
+    for (const m of has){ const a = budgetAlloc(m); for (const [c,v] of Object.entries(a.cats)) ycats[c] = (ycats[c]||0) + v; } }
+  $view.innerHTML = segHtml() + strip + (ybud ? budgetCard(total, ybud, `予算（${has.length}か月分）`) : "") + (!txns.length ? `<div class="panel empty">${y}年の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
     <div class="meta solo">
       <span><b class="num">${txns.length}</b> 件</span>
       <span>月平均 <b class="num">${yen(avg)}</b>（${has.length}か月）</span>
       ${prevSameHas && prevSame ? `<span>前年同期比 <b class="num delta ${d>0?"up":"down"}">${d>0?"▲":"▼"} ${yen(Math.abs(d))}（${dp>0?"+":""}${dp}%）</b></span>` : ""}
     </div>
     <div class="grid g2">
-      ${catPanel(txns, total)}
+      ${catPanel(txns, total, ycats)}
       <section class="panel"><h2>${y}年の月ごとの支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", yms, vals, ym, avg)}</section>
       ${shopPanel(txns)}
     </div>`);
@@ -833,14 +891,15 @@ function renderMonth(){
   const d = total - prev, dp = prev ? Math.round(d/prev*100) : null, prevN = (S.months[shiftYm(ym,-1)]||[]).length;
   const pym = shiftYm(ym,-1), nym = shiftYm(ym,1), nTot = monthTotal(nym), nN = (S.months[nym]||[]).length;
   const strip = stripHtml(1, ymLabel(ym), `${Number(pym.slice(5))}月`, `前の月（${ymLabel(pym)}）`, prev, prevN, `${Number(nym.slice(5))}月`, `次の月（${ymLabel(nym)}）`, nTot, nN, total, monthOptions(ym));
-  $view.innerHTML = segHtml() + strip + (!txns.length ? `<div class="panel empty">${ymLabel(ym)}の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
+  const alloc = budgetAlloc(ym);
+  $view.innerHTML = segHtml() + strip + (alloc ? budgetCard(total, alloc.total, "予算") : "") + (!txns.length ? `<div class="panel empty">${ymLabel(ym)}の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
     <div class="meta solo">
       <span><b class="num">${txns.length}</b> 件</span>
       ${prev && prevN>=5 ? `<span>前月比 <b class="num delta ${d>0?"up":"down"}">${d>0?"▲":"▼"} ${yen(Math.abs(d))}（${dp>0?"+":""}${dp}%）</b></span>` : ""}
       ${unc.length ? `<button type="button" class="chip" data-fcat="none">未分類 ${unc.length}件 を確認</button>` : ""}
     </div>
     <div class="grid g2">
-      ${catPanel(txns, total)}
+      ${catPanel(txns, total, alloc?.cats)}
       <section class="panel"><h2>月別の支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
       ${heat}
       ${shopPanel(txns)}
@@ -936,6 +995,20 @@ function ruleRows(){
           <select data-rcat="${i}" aria-label="分類先">${catOptions(r.cat)}</select>
           <button type="button" class="icon-btn" data-rdel="${i}" aria-label="ルールを削除">×</button></div>`).join("") || `<p class="note">該当するルールはありません。</p>`;
 }
+function budgetPanel(){
+  const B = S.budget, al = budgetAlloc(S.month);
+  const base = [3,2,1].map(k=>Number(shiftYm(S.month,-k).slice(5))+"月").join("・");
+  return `<section class="panel"><h2>予算<small>毎月同じ金額</small></h2>
+      <form class="inline" id="budgetform"><input type="text" inputmode="numeric" id="btotal" placeholder="月の予算（例：200000）" value="${B.total||""}" aria-label="月の予算（円）"><button class="btn primary" type="submit">保存</button></form>
+      <p class="note">カテゴリ別の予算は、直近3か月の支出の割合で自動で配分します。家賃など決まった金額のカテゴリは、下に金額を入れると固定できます（空欄は自動）。0か空欄で保存すると予算を使いません。</p>
+      ${al ? `<p class="note" style="margin-top:12px"><b>${ymLabel(S.month)}の配分</b>（${base}の支出をもとに計算）</p>
+        ${al.over ? `<p class="note" style="color:var(--danger)">固定した金額の合計が、月の予算を超えています。</p>` : ""}
+        ${!al.base ? `<p class="note">直近3か月の明細がないため、自動の配分はまだできません。</p>` : ""}
+        <div class="setlist">${S.cats.map(c=>`<div class="brow">${catIcon(c.id,24)}<span class="n">${esc(c.name)}</span>
+          <input type="text" inputmode="numeric" data-bfix="${esc(c.id)}" value="${B.fixed[c.id]||""}" placeholder="自動 ${yen(al.cats[c.id]||0)}" aria-label="${esc(c.name)}の予算（空欄は自動）"></div>`).join("")}</div>` : ""}
+    </section>`;
+}
+const toYenInt = v => { const n = parseInt(String(v).normalize("NFKC").replace(/[^\d]/g,""),10); return isNaN(n) ? 0 : n; };
 function renderSettings(){
   const counts = {}; for (const t of allTxns()) counts[t.cat]=(counts[t.cat]||0)+1;
   $view.innerHTML = `
@@ -948,6 +1021,7 @@ function renderSettings(){
         <p class="note">${backupNote()}</p>
         <div id="exportbox"></div>
 </section>
+      ${budgetPanel()}
       <section class="panel"><h2>カテゴリ<small>丸をタップでアイコン変更</small></h2>
         <div class="setlist">${S.cats.map(c=>`<div class="setrow">
           <button type="button" class="iconbtn" data-ipick="${esc(c.id)}" aria-label="${esc(c.name)}のアイコンを変える">${catIcon(c.id)}</button>
@@ -969,7 +1043,19 @@ function renderSettings(){
         <p class="note" style="margin:0 0 10px">取り込んだ明細をすべて削除し、カテゴリとルールも最初の状態に戻します。</p>
         <button type="button" class="btn danger${S.armed==="__reset"?" armed":""}" id="reset">${S.armed==="__reset"?"本当にすべて削除する":"すべてのデータを削除"}</button>
       </section>
+      <p class="note" id="appver" style="text-align:center"></p>
     </div>`;
+  showAppVersion();
+}
+// 設定の一番下に、スマホに入っている版（sw.js の CACHE の名前）を出す。PCとスマホで同じ版か比べるため
+function showAppVersion(){
+  try {
+    if (!window.caches) return;
+    caches.keys().then(ks => {
+      const k = ks.filter(x => /^kakeibo-v\d+$/.test(x)).sort((a,b)=>Number(b.slice(9))-Number(a.slice(9)))[0];
+      const el = document.getElementById("appver"); if (el && k) el.textContent = `アプリの版：${k}`;
+    }).catch(()=>{});
+  } catch(e){}
 }
 
 /* ---------- events ---------- */
@@ -1045,21 +1131,22 @@ document.addEventListener("click", async e => {
   const cd = t.closest("[data-cdel]");
   if (cd){ const id = cd.dataset.cdel;
     if (S.armed!==id){ S.armed=id; render(); return; }
-    S.armed=null; S.cats = S.cats.filter(c=>c.id!==id); S.rules = S.rules.filter(r=>r.cat!==id);
+    S.armed=null; S.cats = S.cats.filter(c=>c.id!==id); S.rules = S.rules.filter(r=>r.cat!==id); delete S.budget.fixed[id];
     for (const [m,arr] of Object.entries(S.months)) for (const x of arr) if (x.cat===id){ x.cat=NONE; x.locked=false; markDirty("m-"+m); }
     if (S.fCat===id) S.fCat="all"; markDirty("settings"); render(); return; }
   const ip = t.closest("[data-ipick]"); if (ip){ S.iconPick = S.iconPick===ip.dataset.ipick ? null : ip.dataset.ipick; render(); return; }
   const is = t.closest("[data-iset]"); if (is){ const c = S.cats.find(x=>x.id===S.iconPick); if (c){ c.icon = is.dataset.iset; markDirty("settings"); } S.iconPick = null; render(); return; }
   const rd = t.closest("[data-rdel]"); if (rd){ S.rules.splice(+rd.dataset.rdel,1); markDirty("settings"); render(); return; }
   if (t.id==="reapply"){ reapply(); return; }
+  if (t.id==="app-update"){ t.disabled = true; clearTimeout(flushT); flush().finally(() => location.reload()); return; }   // 保存待ちを書き込んでから読み込み直す
   if (t.id==="bk-later"){ LS.set("kkb-backup-snooze", dayStr(new Date())); render(); return; }
   if (t.id==="reset"){
     if (S.armed!=="__reset"){ S.armed="__reset"; render(); return; }
     S.armed=null; for (const ym of Object.keys(S.months)) { delete S.months[ym]; markDirty("m-"+ym); }
-    S.cats = DEFAULT_CATS.map(c=>({...c})); S.rules = DEFAULT_RULES.map(r=>({...r})); markDirty("settings");
+    S.cats = DEFAULT_CATS.map(c=>({...c})); S.rules = DEFAULT_RULES.map(r=>({...r})); S.budget = normBudget(null); markDirty("settings");
     S.months = makeSample(); S.sample = true; S.month = latestMonth(); S.importLog=null; toast("すべてのデータを削除しました"); render(); return; }
   if (t.id==="export"){
-    const data = JSON.stringify({app:"kakeibo", v:1, exportedAt:new Date().toISOString(), cats:S.cats, rules:S.rules, months:S.sample?{}:S.months}, null, 1);
+    const data = JSON.stringify({app:"kakeibo", v:1, exportedAt:new Date().toISOString(), cats:S.cats, rules:S.rules, budget:S.budget, months:S.sample?{}:S.months}, null, 1);
     const name = `kakeibo-backup-${new Date().toISOString().slice(0,10)}.json`;
     let dl = null; try { dl = await window.claude?.use?.("downloads"); } catch(err){}
     if (dl){ try { await dl.save({filename:name, data}); saveBackupAt(); toast("バックアップを保存しました"); render(); } catch(err){ if (err?.code!=="declined") toast("保存できませんでした。もう一度お試しください。"); } }
@@ -1079,7 +1166,7 @@ document.addEventListener("click", async e => {
   if (t.id==="restore-ok"){
     const o = S.pendingImport.data; S.pendingImport=null;
     for (const ym of Object.keys(S.months)) markDirty("m-"+ym);
-    S.cats = o.cats; S.rules = o.rules||[]; S.months = o.months||{}; S.sample = !Object.keys(S.months).length;
+    S.cats = o.cats; S.rules = o.rules||[]; S.budget = normBudget(o.budget); S.months = o.months||{}; S.sample = !Object.keys(S.months).length;
     if (S.sample) S.months = makeSample();
     migrateV2();   // 古いバックアップも今のカテゴリ構成に合わせる
     for (const ym of Object.keys(S.months)) markDirty("m-"+ym);
@@ -1094,6 +1181,7 @@ document.addEventListener("change", async e => {
   if (t.id==="learn"){ S.learn = t.checked; return; }
   if (t.dataset.cname){ const c = S.cats.find(x=>x.id===t.dataset.cname); const v=t.value.trim(); if (c && v){ c.name=v; markDirty("settings"); } else render(); return; }
   if (t.dataset.rkw!==undefined){ const v=t.value.trim(); if (v){ S.rules[+t.dataset.rkw].kw=v; markDirty("settings"); } else render(); return; }
+  if (t.dataset.bfix!==undefined){ const n = toYenInt(t.value); if (n>0) S.budget.fixed[t.dataset.bfix] = n; else delete S.budget.fixed[t.dataset.bfix]; markDirty("settings"); render(); return; }
   if (t.dataset.rcat!==undefined){ S.rules[+t.dataset.rcat].cat=t.value; markDirty("settings"); return; }
   if (t.id==="restore"){
     const f = t.files[0]; t.value=""; if (!f) return;
@@ -1131,6 +1219,8 @@ document.addEventListener("submit", e => {
   }
   if (f.id==="catform"){ const v = document.getElementById("newcat").value.trim(); if (!v) return;
     S.cats.push({id:"c"+Date.now().toString(36), name:v, icon:"tag"}); markDirty("settings"); render(); return; }
+  if (f.id==="budgetform"){ S.budget.total = toYenInt(document.getElementById("btotal").value); markDirty("settings"); render();
+    toast(S.budget.total ? `月の予算を${yen(S.budget.total)}にしました` : "予算を使わない設定にしました"); return; }
   if (f.id==="ruleform"){ const kw = document.getElementById("newkw").value.trim(), cat = document.getElementById("newrc").value; if (!kw) return;
     const ex = S.rules.find(r=>mkey(r.kw)===mkey(kw)); if (ex) ex.cat=cat; else S.rules.push({kw,cat});
     markDirty("settings"); S.rq=""; render(); toast(`ルール「${kw} → ${catName(cat)}」を追加しました。「再適用」で既存の明細にも反映できます`); return; }
@@ -1140,7 +1230,18 @@ document.addEventListener("submit", e => {
 S.months = makeSample(); S.month = latestMonth();
 render();
 initStorage();
-if ("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+// 新しい版の確認：sw.js はブラウザのキャッシュを通さずに確認し、開いたとき・裏から戻ったときにも確認する。
+// 新しい版に切り替わったら「新しい版があります｜更新する」を出す（勝手には読み込み直さない）
+if ("serviceWorker" in navigator && window.isSecureContext){
+  const hadController = !!navigator.serviceWorker.controller;   // 初めて入れたときは知らせない
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || S.updateReady) return;
+    S.updateReady = true; render();
+  });
+  navigator.serviceWorker.register("sw.js", {updateViaCache:"none"}).then(reg => {
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState==="visible") reg.update().catch(()=>{}); });
+  }).catch(()=>{});
+}
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
 })();
 </script>
