@@ -20,7 +20,7 @@
   --warn:#9a5208; --warn-soft:#fbeedc; --danger:#b3261e; --danger-soft:#f9e1de; --danger-dim:#e39a92; --good:#1d6f36;
   --shadow:0 1px 2px rgba(20,32,27,.04),0 6px 20px rgba(20,32,27,.06);
   --hair:rgba(20,32,27,.1); --radius:18px; --radius-sm:12px;
-  --tabbar:color-mix(in srgb, var(--surface) 78%, transparent); --scrim:rgba(10,16,13,.42); --budget:#c26a00; --toast-gray:#66716b;
+  --tabbar:color-mix(in srgb, var(--surface) 78%, transparent); --scrim:rgba(10,16,13,.42); --budget:#c26a00; --toast-gray:#dfe4e1;
   --pig:#e98ea6; --pig-ink:#6b2438;
   --sans:system-ui,-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP",sans-serif;
   --mono:ui-monospace,"SF Mono","SFMono-Regular","Roboto Mono",Menlo,monospace;
@@ -32,7 +32,7 @@
     --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
     --bar:#4fb192; --bar-dim:#3f6f5f; --grid:#232b27;
     --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --danger-dim:#7a3833; --good:#6fd08c;
-    --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --budget:#f0a750; --toast-gray:#48524d; --pig:#f0a3b8; --pig-ink:#4a1626;
+    --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --budget:#f0a750; --toast-gray:#3a433f; --pig:#f0a3b8; --pig-ink:#4a1626;
   }
 }
 :root[data-theme="dark"]{
@@ -41,7 +41,7 @@
   --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
   --bar:#4fb192; --bar-dim:#3f6f5f; --grid:#232b27;
   --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --danger-dim:#7a3833; --good:#6fd08c;
-  --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --budget:#f0a750; --toast-gray:#48524d; --pig:#f0a3b8; --pig-ink:#4a1626;
+  --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --budget:#f0a750; --toast-gray:#3a433f; --pig:#f0a3b8; --pig-ink:#4a1626;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -253,7 +253,7 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
 .aitext{display:block;width:100%;height:280px;margin-top:10px;padding:10px 12px;border:0;border-radius:10px;background:var(--surface-2);color:var(--ink);font-family:var(--mono);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;overflow:auto;resize:vertical}
 .toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-size:13px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);z-index:10;width:max-content;max-width:calc(100% - 32px)}
 .toast span{min-width:0}
-.toast.light{background:var(--toast-gray);color:#fff;justify-content:center;text-align:center}
+.toast.light{background:var(--toast-gray);color:var(--ink);justify-content:center;text-align:center}   /* 薄いグレーに濃い文字（利用者の希望） */
 .toast.light span{white-space:pre-line;line-height:1.5}   /* 「最新のバージョンです」：白だと周りのカードと見分けにくいのでグレー（利用者の希望） */
 .toast button{flex:none;white-space:nowrap}
 .toast button{border:0;background:transparent;color:var(--accent-soft);font-weight:700;cursor:pointer;text-decoration:underline}
@@ -1406,7 +1406,7 @@ async function pullRefresh(){
     if (!reg){ location.reload(); return; }
     try { await Promise.race([reg.update(), new Promise((_,ng) => setTimeout(() => ng(new Error("timeout")), 10000))]); }   // 電波が弱いときに待ち続けない
     catch(e){ ptrHide(); toast("新しいバージョンを確認できませんでした。電波のよい場所でもう一度お試しください。"); return; }
-    if (!(reg.installing || reg.waiting)){ const v = await appVersion(); ptrHide(); toast(`最新版です${v ? `\nversion: ${v}` : ""}`, null, null, true); return; }   // 2行・中央揃え（利用者の指定の文言）
+    if (!(reg.installing || reg.waiting)){ const v = await appVersion(); ptrHide(); toast(`最新のバージョンです${v ? `\nversion: ${v}` : ""}`, null, null, true); return; }   // 2行・中央揃え
     ptrShow("新しいバージョンに切り替えています…");
     await new Promise(res => { const t = setTimeout(res, 8000);
       navigator.serviceWorker.addEventListener("controllerchange", () => { clearTimeout(t); res(); }, {once:true}); });
