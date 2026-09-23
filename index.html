@@ -19,6 +19,7 @@
   --bar:#2d7a65; --bar-dim:#bcd5cc; --grid:#e4e8e4;
   --warn:#9a5208; --warn-soft:#fbeedc; --danger:#b3261e; --danger-soft:#f9e1de; --good:#1d6f36;
   --shadow:0 1px 2px rgba(20,32,27,.06),0 4px 16px rgba(20,32,27,.05);
+  --pig:#e98ea6; --pig-ink:#6b2438;
   --sans:system-ui,-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP",sans-serif;
   --mono:ui-monospace,"SF Mono","SFMono-Regular","Roboto Mono",Menlo,monospace;
 }
@@ -29,7 +30,7 @@
     --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
     --bar:#4fb192; --bar-dim:#2c4a40; --grid:#232b27;
     --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --good:#6fd08c;
-    --shadow:0 1px 2px rgba(0,0,0,.3);
+    --shadow:0 1px 2px rgba(0,0,0,.3); --pig:#f0a3b8; --pig-ink:#4a1626;
   }
 }
 :root[data-theme="dark"]{
@@ -38,7 +39,7 @@
   --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
   --bar:#4fb192; --bar-dim:#2c4a40; --grid:#232b27;
   --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --good:#6fd08c;
-  --shadow:0 1px 2px rgba(0,0,0,.3);
+  --shadow:0 1px 2px rgba(0,0,0,.3); --pig:#f0a3b8; --pig-ink:#4a1626;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -197,12 +198,58 @@ details.add .addform{padding:12px;background:var(--surface-2);border-radius:10px
 .toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);z-index:10;max-width:calc(100% - 32px)}
 .toast button{border:0;background:transparent;color:var(--accent-soft);font-weight:700;cursor:pointer;text-decoration:underline}
 @media (prefers-reduced-motion:no-preference){.toast{animation:rise .2s ease-out}@keyframes rise{from{transform:translate(-50%,8px);opacity:0}}}
+
+/* piggy mark */
+.brand{align-items:center}
+.pig{width:30px;height:30px;flex:none}
+.pig ellipse,.pig path,.pig rect{fill:var(--pig)}
+.pig .slot{fill:var(--pig-ink)} .pig .eye{fill:var(--pig-ink)}
+
+/* category x month table */
+.hmwrap{overflow-x:auto;margin-inline:-6px;padding-inline:6px;-webkit-overflow-scrolling:touch}
+.hm{border-collapse:separate;border-spacing:3px;min-width:100%;font-size:12px}
+.hm th{font-weight:500;color:var(--muted);text-align:right;padding:2px 6px;white-space:nowrap}
+.hm thead th.cur{color:var(--ink);font-weight:700}
+.hm tbody th,.hm tfoot th{position:sticky;left:0;z-index:2;background:var(--surface);text-align:left;color:var(--ink);font-weight:500;padding-left:0;max-width:6.5em;overflow:hidden;text-overflow:ellipsis}
+.hm td{position:relative;isolation:isolate;text-align:right;padding:7px 7px;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;border-radius:5px;cursor:pointer;min-width:4.6em}
+.hm td.v::before{content:"";position:absolute;inset:0;border-radius:5px;background:var(--bar);opacity:var(--a,0);z-index:-1}
+.hm td.v.cur{box-shadow:inset 0 0 0 1.5px var(--ink-2)}
+.hm td.zero{color:var(--muted)}
+.hm td.dl{cursor:default;font-size:11px;padding-left:10px}
+.hm td.dl.up{color:var(--danger)} .hm td.dl.down{color:var(--good)} .hm td.dl.eq{color:var(--muted)}
+.hm tfoot th,.hm tfoot td{border-top:1px solid var(--line);font-weight:700;color:var(--ink)}
+.hm tfoot td{cursor:default}
+.legend{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:56px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--grid),var(--bar))}
+
+/* motion */
+button{transition:transform .12s ease, background-color .15s}
+@media (prefers-reduced-motion:no-preference){
+  button:active,.cbar:active,.hm td.v:active,.row:active{transform:scale(.97)}
+  .tabs button:active{transform:scale(.92)}
+  .tabs button[aria-selected="true"] svg{animation:pop .38s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.15) translateY(-2px)}100%{transform:none}}
+  #view.anim-fade{animation:vfade .32s ease-out}
+  #view.anim-left{animation:vleft .32s cubic-bezier(.2,.8,.2,1)}
+  #view.anim-right{animation:vright .32s cubic-bezier(.2,.8,.2,1)}
+  @keyframes vfade{from{opacity:0;transform:translateY(8px)}}
+  @keyframes vleft{from{opacity:0;transform:translateX(28px)}}
+  @keyframes vright{from{opacity:0;transform:translateX(-28px)}}
+  #view.grow .cbar .fill{animation:gx .7s cubic-bezier(.2,.8,.2,1) both;transform-origin:left;animation-delay:calc(var(--i,0) * 45ms + 80ms)}
+  #view.grow .col .b{animation:gy .65s cubic-bezier(.2,.8,.2,1) both;transform-origin:bottom;animation-delay:calc(var(--i,0) * 35ms + 120ms)}
+  #view.grow .hm td.v::before{animation:hf .6s ease-out both;animation-delay:calc(var(--i,0) * 25ms + 150ms)}
+  @keyframes gx{from{transform:scaleX(0)}}
+  @keyframes gy{from{transform:scaleY(0)}}
+  @keyframes hf{from{opacity:0}}
+  .monthnav .m.flip{animation:mflip .3s ease-out}
+  @keyframes mflip{from{opacity:0;transform:translateY(-6px)}}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand"><h1>カード明細家計簿</h1></div>
+    <div class="brand"><svg class="pig" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="15" cy="18" rx="11" ry="8.5"/><path d="M8 12.5 7 6.5l5.5 3.6z"/><rect x="24" y="15" width="5.5" height="6" rx="2.4"/><rect x="8.5" y="23" width="3.6" height="5.5" rx="1.4"/><rect x="18" y="23" width="3.6" height="5.5" rx="1.4"/><rect x="12" y="10.4" width="7" height="1.8" rx=".9" class="slot"/><circle cx="21" cy="15.5" r="1.2" class="eye"/></svg><h1>カード明細家計簿</h1></div>
     <div class="monthnav" role="group" aria-label="表示する月">
       <button id="prev" type="button" aria-label="前の月">‹</button>
       <div class="m" id="mlabel"></div>
@@ -364,7 +411,7 @@ async function initStorage(){
     store.mode = "local";
     try { const raw = localStorage.getItem("kkb-data"); if (raw){ const o = JSON.parse(raw); applyLoaded(o.settings, o.months); } } catch(e){}
   }
-  render();
+  nextAnim = "fade"; shownTotal = 0; render();
 }
 
 /* ---------- CSV ---------- */
@@ -482,6 +529,18 @@ function niceMax(v){ if (v<=0) return 10000; const p = Math.pow(10, Math.floor(M
 
 /* ---------- render ---------- */
 const $view = document.getElementById("view");
+const TAB_ORDER = ["overview","list","import","settings"];
+let nextAnim = "fade", shownTotal = 0;
+const reduceMotion = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(e){ return false; } };
+function countUp(el, from, to){
+  const fmt = v => Math.round(v).toLocaleString("ja-JP");
+  if (reduceMotion() || from===to){ el.textContent = fmt(to); return; }
+  const t0 = performance.now(), dur = 750;
+  const step = now => { const p = Math.min(1,(now-t0)/dur), e = 1-Math.pow(1-p,3);
+    el.textContent = fmt(from + (to-from)*e); if (p<1 && el.isConnected) requestAnimationFrame(step); };
+  el.textContent = fmt(from); requestAnimationFrame(step);
+}
+function flipMonth(){ const m = document.getElementById("mlabel"); m.classList.remove("flip"); void m.offsetWidth; if (!reduceMotion()) m.classList.add("flip"); }
 function render(){
   if (!S.month) S.month = latestMonth() || new Date().toISOString().slice(0,7);
   document.getElementById("mlabel").textContent = ymLabel(S.month);
@@ -493,7 +552,40 @@ function render(){
     ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : "";
   document.getElementById("store").textContent =
     "データはこのスマホの中だけに保存され、外部には送信されません。念のため、月に一度「設定 → バックアップ」で書き出しておいてください。";
+  $view.classList.remove("anim-fade","anim-left","anim-right","grow");
   ({overview:renderOverview, list:renderList, import:renderImport, settings:renderSettings}[S.tab] || renderOverview)();
+  if (nextAnim && !reduceMotion()){ void $view.offsetWidth; $view.classList.add("anim-"+nextAnim, "grow"); }
+  nextAnim = null;
+}
+
+function heatmap(ym){
+  const first = Object.keys(S.months).sort()[0] || ym;
+  const months = Array.from({length:6},(_,i)=>shiftYm(ym,i-5)).filter(m => m>=first || m===ym);
+  if (months.length < 2) return "";
+  const sums = {}; // cat -> {ym: v}
+  for (const m of months) for (const t of (S.months[m]||[])) { (sums[t.cat] ||= {}); sums[t.cat][m] = (sums[t.cat][m]||0) + t.amount; }
+  const prevYm = shiftYm(ym,-1);
+  const rows = Object.keys(sums).filter(c => months.some(m => sums[c][m]))
+    .sort((a,b) => (sums[b][ym]||0)-(sums[a][ym]||0) || months.reduce((s,m)=>s+(sums[b][m]||0)-(sums[a][m]||0),0));
+  let k = 0;
+  const body = rows.map(c => {
+    const vs = months.map(m => sums[c][m]||0), mx = Math.max(...vs, 1);
+    const cells = months.map((m,i) => { const v = vs[i];
+      return `<td class="v${m===ym?" cur":""}${v?"":" zero"}" data-hm="${m}|${esc(c)}" style="--a:${v>0?(0.12+0.5*v/mx).toFixed(2):0};--i:${k++}" aria-label="${ymLabel(m)} ${esc(catName(c))} ${yen(v)}">${v?v.toLocaleString("ja-JP"):"–"}</td>`; }).join("");
+    const dv = (sums[c][ym]||0) - (sums[c][prevYm]||0);
+    const dl = months.includes(prevYm) ? `<td class="dl ${dv>0?"up":dv<0?"down":"eq"}">${dv>0?"▲":dv<0?"▼":"±"}${Math.abs(dv).toLocaleString("ja-JP")}</td>` : "";
+    return `<tr><th>${esc(catName(c))}</th>${cells}${dl}</tr>`;
+  }).join("");
+  const tots = months.map(m => monthTotal(m));
+  const tdv = monthTotal(ym) - monthTotal(prevYm);
+  return `<section class="panel"><h2>カテゴリ別の推移<small>直近${months.length}か月・タップで明細へ</small></h2>
+    <div class="hmwrap" id="hmwrap"><table class="hm">
+      <thead><tr><th></th>${months.map(m=>`<th class="${m===ym?"cur":""}">${Number(m.slice(5))}月</th>`).join("")}${months.includes(prevYm)?"<th>前月差</th>":""}</tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot><tr><th>合計</th>${tots.map(v=>`<td>${v.toLocaleString("ja-JP")}</td>`).join("")}${months.includes(prevYm)?`<td class="dl ${tdv>0?"up":tdv<0?"down":"eq"}">${tdv>0?"▲":tdv<0?"▼":"±"}${Math.abs(tdv).toLocaleString("ja-JP")}</td>`:""}</tr></tfoot>
+    </table></div>
+    <div class="legend"><span>少</span><i></i><span>多</span><span style="margin-left:auto">色の濃さはカテゴリごとの6か月内の比較</span></div>
+  </section>`;
 }
 
 function renderOverview(){
@@ -504,19 +596,20 @@ function renderOverview(){
   const months = Array.from({length:12},(_,i)=>shiftYm(ym,i-11)).filter(m => m>= (Object.keys(S.months).sort()[0]||ym) || m===ym);
   const vals = months.map(m=>monthTotal(m)); const mx = niceMax(Math.max(...vals,1));
   const grid = [0,.5,1].map(f=>`<div class="gl${f===0?" base":""}" style="bottom:calc(22px + ${f} * (100% - 22px))"><span>${f? short(mx*f):"0"}</span></div>`).join("");
-  const cols = months.map((m,i)=>`<button type="button" class="col${m===ym?" cur":""}" data-ym="${m}" data-v="${vals[i]}" aria-label="${ymLabel(m)} ${yen(vals[i])}"><div class="b" style="height:${vals[i]/mx*100}%"></div><span class="x">${Number(m.slice(5))}月</span></button>`).join("");
+  const cols = months.map((m,i)=>`<button type="button" class="col${m===ym?" cur":""}" data-ym="${m}" data-v="${vals[i]}" aria-label="${ymLabel(m)} ${yen(vals[i])}"><div class="b" style="height:${vals[i]/mx*100}%;--i:${i}"></div><span class="x">${Number(m.slice(5))}月</span></button>`).join("");
   // categories
   const by = {}; for (const t of txns) by[t.cat]=(by[t.cat]||0)+t.amount;
   const cats = Object.entries(by).filter(([,v])=>v!==0).sort((a,b)=>b[1]-a[1]);
   const cmax = Math.max(...cats.map(c=>c[1]),1);
-  const cbars = cats.map(([c,v])=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${esc(catName(c))}</span><span class="track"><span class="fill" style="display:block;width:${Math.max(0,v)/cmax*100}%"></span></span><span class="v num">${yen(v)}<span>${total?Math.round(v/total*100):0}%</span></span></button>`).join("");
+  const cbars = cats.map(([c,v],i)=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${esc(catName(c))}</span><span class="track"><span class="fill" style="display:block;width:${Math.max(0,v)/cmax*100}%;--i:${i}"></span></span><span class="v num">${yen(v)}<span>${total?Math.round(v/total*100):0}%</span></span></button>`).join("");
   // shops
   const bs = {}; for (const t of txns){ const k=t.name; (bs[k] ||= {v:0,n:0}); bs[k].v+=t.amount; bs[k].n++; }
   const shops = Object.entries(bs).sort((a,b)=>b[1].v-a[1].v).slice(0,6);
+  const heat = heatmap(ym);
   const d = total - prev, dp = prev ? Math.round(d/prev*100) : null, prevN = (S.months[shiftYm(ym,-1)]||[]).length;
   $view.innerHTML = !txns.length ? `<div class="panel empty">${ymLabel(ym)}の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
     <section class="summary">
-      <div class="total"><div class="lbl">${ymLabel(ym)}の支出</div><div class="val"><span class="yen">¥</span>${total.toLocaleString("ja-JP")}</div></div>
+      <div class="total"><div class="lbl">${ymLabel(ym)}の支出</div><div class="val"><span class="yen">¥</span><span id="totv">${total.toLocaleString("ja-JP")}</span></div></div>
       <div class="meta">
         <span><b class="num">${txns.length}</b> 件</span>
         ${prev && prevN<5 ? `<span>前月 <b class="num">${yen(prev)}</b>（${prevN}件のみ）</span>` : ""}
@@ -526,9 +619,13 @@ function renderOverview(){
     </section>
     <div class="grid g2">
       <section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2><div class="cbars">${cbars}</div></section>
+      ${heat}
       <section class="panel"><h2>月別の支出<small>直近12か月</small></h2><div class="trend" id="trend">${grid}<div class="cols">${cols}</div></div></section>
       <section class="panel"><h2>よく使ったお店<small>金額順</small></h2><ul class="shops">${shops.map(([n,o])=>`<li><span>${esc(n)}<span class="c">${o.n}回</span></span><span class="num">${yen(o.v)}</span></li>`).join("")}</ul></section>
     </div>`;
+  const tv = document.getElementById("totv");
+  if (tv){ if (nextAnim) countUp(tv, shownTotal, total); shownTotal = total; }
+  const hw = document.getElementById("hmwrap"); if (hw) hw.scrollLeft = hw.scrollWidth;
   const tr = document.getElementById("trend");
   if (tr){
     tr.addEventListener("pointerover", e => { const c = e.target.closest(".col"); if (!c) return;
@@ -645,16 +742,20 @@ function renderSettings(){
 /* ---------- events ---------- */
 document.getElementById("tabs").addEventListener("click", e => {
   const b = e.target.closest("[data-tab]"); if (!b) return;
+  if (b.dataset.tab===S.tab) return;
+  nextAnim = TAB_ORDER.indexOf(b.dataset.tab) > TAB_ORDER.indexOf(S.tab) ? "left" : "right";
+  window.scrollTo(0,0);
   S.tab = b.dataset.tab; S.armed = null; try { localStorage.setItem("kkb-tab", S.tab); } catch(e){} render();
 });
-document.getElementById("prev").onclick = () => { S.month = shiftYm(S.month,-1); render(); };
-document.getElementById("next").onclick = () => { S.month = shiftYm(S.month,1); render(); };
+document.getElementById("prev").onclick = () => { S.month = shiftYm(S.month,-1); nextAnim = "right"; render(); flipMonth(); };
+document.getElementById("next").onclick = () => { S.month = shiftYm(S.month,1); nextAnim = "left"; render(); flipMonth(); };
 
 document.addEventListener("click", async e => {
   const t = e.target;
-  const go = t.closest("[data-go]"); if (go){ S.tab = go.dataset.go; render(); return; }
-  const fc = t.closest("[data-fcat]"); if (fc){ S.fCat = fc.dataset.fcat; S.q=""; S.tab="list"; render(); return; }
-  const col = t.closest(".col[data-ym]"); if (col){ S.month = col.dataset.ym; render(); return; }
+  const go = t.closest("[data-go]"); if (go){ nextAnim="left"; window.scrollTo(0,0); S.tab = go.dataset.go; render(); return; }
+  const fc = t.closest("[data-fcat]"); if (fc){ S.fCat = fc.dataset.fcat; S.q=""; S.tab="list"; nextAnim="left"; window.scrollTo(0,0); render(); return; }
+  const hm = t.closest("[data-hm]"); if (hm){ const [m,c] = hm.dataset.hm.split("|"); S.month=m; S.fCat=c; S.q=""; S.tab="list"; nextAnim="left"; window.scrollTo(0,0); render(); flipMonth(); return; }
+  const col = t.closest(".col[data-ym]"); if (col){ S.month = col.dataset.ym; nextAnim="fade"; render(); flipMonth(); return; }
   const del = t.closest("[data-del]"); if (del){ delTxn(S.month, del.dataset.del); return; }
   const cd = t.closest("[data-cdel]");
   if (cd){ const id = cd.dataset.cdel;
