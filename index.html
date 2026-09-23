@@ -300,12 +300,12 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
 .ctsum b{color:var(--ink);font-weight:600}
 .ctsum .up{color:var(--danger)} .ctsum .down{color:var(--good)}
 .bline{position:absolute;left:42px;right:0;top:0;bottom:22px;width:calc(100% - 42px);height:calc(100% - 22px);overflow:visible;pointer-events:none;z-index:2}
-.bline polyline{fill:none;stroke:var(--budget);stroke-width:1.5;opacity:.7;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
-.col .bdot{position:absolute;left:50%;width:6px;height:6px;margin:0 0 -3px -3px;border-radius:50%;background:var(--budget);opacity:.8;pointer-events:none;z-index:2}   /* 予算の線は控えめに（利用者の希望） */
+.col .bdot{position:absolute;left:50%;width:5px;height:5px;margin:0 0 -2.5px -2.5px;border-radius:50%;background:var(--budget);opacity:.55;pointer-events:none;z-index:2}   /* 点は線に合わせて小さく薄く */
+.bline polyline{fill:none;stroke:var(--budget);stroke-width:1;opacity:.45;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .col.over .b{background:var(--danger-dim)}
 .col.over.cur .b{background:var(--danger)}
 .tlegend{display:flex;justify-content:flex-end;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
-.tlegend .lb::before{content:"";display:inline-block;width:16px;height:6px;vertical-align:middle;margin-right:5px;opacity:.75;background:radial-gradient(circle,var(--budget) 0 2.5px,transparent 3px) center/6px 6px no-repeat,linear-gradient(var(--budget),var(--budget)) center/100% 1.5px no-repeat}
+.tlegend .lb::before{content:"";display:inline-block;width:16px;height:5px;vertical-align:middle;margin-right:5px;opacity:.6;background:radial-gradient(circle,var(--budget) 0 2px,transparent 2.5px) center/5px 5px no-repeat,linear-gradient(var(--budget),var(--budget)) center/100% 1px no-repeat}   /* 予算の線は細く薄く・小さな点つき（利用者の希望） */
 .tlegend .la::before{content:"";display:inline-block;width:14px;border-top:1.5px dashed var(--ink-2);vertical-align:middle;margin-right:5px;opacity:.7}
 .trend .avg{position:absolute;left:42px;right:0;border-top:1.5px dashed var(--ink-2);z-index:2;pointer-events:none;opacity:.7}
 .trend .avg span{position:absolute;right:0;top:-18px;font-size:10px;color:var(--ink-2);background:var(--surface);padding:0 4px;border-radius:3px;font-family:var(--mono)}
@@ -500,7 +500,7 @@ function settingsBody(){ return {v:3, cats:S.cats, rules:S.rules, budget:S.budge
 // 予算の読み込み（v3で追加。v2以前やバックアップに無いときは「予算なし」にする＝v3への移行）
 function normBudget(b){
   const fixed = {};
-  if (b && b.fixed && typeof b.fixed==="object") for (const [c,v] of Object.entries(b.fixed)) if (Number(v)>0) fixed[c] = Math.round(Number(v));
+  if (b && b.fixed && typeof b.fixed==="object") for (const [c,v] of Object.entries(b.fixed)) if (v!==null && v!=="" && Number(v)>=0) fixed[c] = Math.round(Number(v));   // 0も「このカテゴリには割り振らない」として有効
   return { total: b && Number(b.total)>0 ? Math.round(Number(b.total)) : 0, fixed };
 }
 async function writeDoc(id){
@@ -753,13 +753,13 @@ function render(){
   renderSheet();
 }
 
-// budgets：月ごとの予算（無い月は null）。あれば予算の折れ線（.bline。予算のない月で切れる）と各月の点（.bdot）を描き、超えた月の棒を赤くする
+// budgets：月ごとの予算（無い月は null、0も予算あり）。予算が1円以上の月を結ぶ折れ線（.bline。予算のない月で切れる）と小さな点（.bdot）を描き、超えた月の棒を赤くする
 function trendChart(id, months, vals, cur, avg, budgets){
   const bs = budgets || [];
   const mx = niceMax(Math.max(...vals, avg||0, ...bs.map(b=>b||0), 1));
   const grid = [0,.5,1].map(f=>`<div class="gl${f===0?" base":""}" style="bottom:calc(22px + ${f} * (100% - 22px))"><span>${f? short(mx*f):"0"}</span></div>`).join("");
-  const cols = months.map((m,i)=>{ const b = bs[i]>0 ? bs[i] : null, over = b!==null && vals[i]>b;
-    return `<button type="button" class="col${m===cur?" cur":""}${over?" over":""}" data-ym="${m}" data-v="${vals[i]}"${b!==null?` data-b="${b}"`:""} aria-label="${ymLabel(m)} ${yen(vals[i])}${b!==null?`、予算 ${yen(b)}`:""}"><div class="b" style="height:${Math.max(0,vals[i])/mx*100}%;--i:${i}"></div>${b!==null?`<i class="bdot" style="bottom:${b/mx*100}%"></i>`:""}<span class="x">${Number(m.slice(5))}${months.length>8?"":"月"}</span></button>`; }).join("");
+  const cols = months.map((m,i)=>{ const b = bs[i]!=null && bs[i]>=0 ? bs[i] : null, over = b!==null && vals[i]>b;
+    return `<button type="button" class="col${m===cur?" cur":""}${over?" over":""}" data-ym="${m}" data-v="${vals[i]}"${b!==null?` data-b="${b}"`:""} aria-label="${ymLabel(m)} ${yen(vals[i])}${b!==null?`、予算 ${yen(b)}`:""}"><div class="b" style="height:${Math.max(0,vals[i])/mx*100}%;--i:${i}"></div>${b>0?`<i class="bdot" style="bottom:${b/mx*100}%"></i>`:""}<span class="x">${Number(m.slice(5))}${months.length>8?"":"月"}</span></button>`; }).join("");
   const av = avg ? `<div class="avg" style="bottom:calc(22px + ${avg/mx} * (100% - 22px))"><span>平均 ${short(avg)}</span></div>` : "";
   // 折れ線：列の中央を結ぶ。予算のない月で線を切る（線は SVG を横に伸ばすので、太さは vector-effect で固定）
   const segs = []; let seg = [];
@@ -769,7 +769,7 @@ function trendChart(id, months, vals, cur, avg, budgets){
   if (seg.length) segs.push(seg);
   const bl = segs.some(g=>g.length>1) ? `<svg class="bline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${segs.filter(g=>g.length>1).map(g=>`<polyline points="${g.join(" ")}"/>`).join("")}</svg>` : "";
   const lg = bs.some(b=>b>0) ? `<div class="tlegend" aria-hidden="true"><span class="lb">予算</span>${avg?`<span class="la">平均</span>`:""}</div>` : "";
-  return `<div class="trend" id="${id}">${grid}${av}<div class="cols">${cols}</div>${bl}</div>${lg}`;
+  return `<div class="trend" id="${id}" data-mx="${mx}">${grid}${av}<div class="cols">${cols}</div>${bl}</div>${lg}`;
 }
 function catDonut(cats, total){
   const pos = cats.filter(([,v])=>v>0), sum = pos.reduce((s,[,v])=>s+v,0);
@@ -801,7 +801,7 @@ function catTrend(ym){
     <div class="ctsum"><span>${Number(ym.slice(5))}月 <b class="num">${yen(cur)}</b></span>
       ${months.includes(prevYm) ? `<span>前月差 <b class="num ${dv>0?"up":dv<0?"down":""}">${dv>0?"▲":dv<0?"▼":"±"}${yen(Math.abs(dv))}</b></span>` : ""}
       <span>${months.length}か月平均 <b class="num">${yen(avg)}</b></span></div>
-    ${trendChart("ctrend", months, vals, ym, avg, months.map(m => budgetAlloc(m)?.cats[sel] || null)).replace('id="ctrend"', `id="ctrend" data-cat="${esc(sel)}"`)}
+    ${trendChart("ctrend", months, vals, ym, avg, months.map(m => budgetAlloc(m)?.cats[sel] ?? null)).replace('id="ctrend"', `id="ctrend" data-cat="${esc(sel)}"`)}
   </section>`;
 }
 
@@ -815,7 +815,7 @@ function budgetAlloc(ym){
   const avg = {};
   for (const m of base) for (const t of S.months[m]) if (t.cat!==NONE && valid.has(t.cat)) avg[t.cat] = (avg[t.cat]||0) + t.amount;
   const cats = {}; let fsum = 0;
-  for (const [c,v] of Object.entries(B.fixed)) if (valid.has(c) && v>0){ cats[c] = v; fsum += v; }
+  for (const [c,v] of Object.entries(B.fixed)) if (valid.has(c) && v>=0){ cats[c] = v; fsum += v; }   // 0で固定したカテゴリは自動配分から外れる
   const rest = Math.max(0, B.total - fsum);
   const auto = Object.entries(avg).filter(([c,v]) => v>0 && !(c in cats)).sort((a,b)=>b[1]-a[1]);
   const asum = auto.reduce((a,[,v])=>a+v, 0);
@@ -843,11 +843,11 @@ function catPanel(txns, total, budgets){
   // 最初は上位5件だけ。予算を超えたカテゴリは必ず出す。残りは「ほか◯件を表示」で開く（S.catAll）
   const TOP = 5; let hid = 0;
   const cbars = cats.map(([c,v],i)=>{
-    const b = budgets?.[c]>0 ? budgets[c] : null, over = b!==null && v>b, hide = !S.catAll && i>=TOP && !over;
+    const b = budgets && budgets[c]>=0 ? budgets[c] : null, over = b!==null && v>b, hide = !S.catAll && i>=TOP && !over;   // 予算0も「予算あり」
     if (hide) hid++;
     return `<button type="button" class="cbar${c===NONE?" none":""}${b!==null?" hasb":""}${over?" over":""}" data-fcat="${esc(c)}"${hide?" hidden":""} aria-label="${esc(catName(c))} ${yen(v)}${b!==null?`、予算 ${yen(b)}、${over?`${yen(v-b)}超過`:`残り ${yen(b-v)}`}`:""}">`
       + `<span class="n">${catIcon(c,22)}<b>${esc(catName(c))}</b></span>`
-      + (b!==null ? `<span class="bbar"><i style="width:${Math.min(100, Math.max(0, v/b*100))}%"></i></span>` : "")
+      + (b!==null ? `<span class="bbar"><i style="width:${b>0 ? Math.min(100, Math.max(0, v/b*100)) : 100}%"></i></span>` : "")
       + `<span class="v num">${yen(v)}${b!==null ? `<small class="bs">${over?`▲${yen(v-b)}`:`残り ${yen(b-v)}`}</small>` : `<span>${v>0&&psum?Math.round(v/psum*100)+"%":"—"}</span>`}</span></button>`;
   }).join("");
   const more = hid ? `<button type="button" class="catmore" data-catall>ほか${hid}件を表示</button>` : (S.catAll && cats.length>TOP ? `<button type="button" class="catmore" data-catall>少なく表示</button>` : "");
@@ -948,7 +948,7 @@ function showTip(tr, c){
   const v = +c.dataset.v, bg = c.dataset.b ? +c.dataset.b : null;
   const tip = document.createElement("div"); tip.className="tip";
   tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(v)}` + (bg!==null ? `\n予算 ${yen(bg)}` + (v>bg ? `・▲${yen(v-bg)}` : `・残り ${yen(bg-v)}`) : "");
-  const line = c.querySelector(".bdot"), top = Math.min(b.top, line ? line.getBoundingClientRect().top : Infinity);
+  const mx = +tr.dataset.mx, top = Math.min(b.top, bg>0 && mx ? r.bottom - r.height*bg/mx : Infinity);   // 予算の高さ（列の高さ×予算/上限）
   tip.style.top = (top - tb.top - 6)+"px";   // 棒の先端（予算の線が上ならその線）の上に出す。背の高い棒では見出しにかぶってもよい
   tr.appendChild(tip);
   const w = tip.offsetWidth; let x = r.left - tb.left + r.width/2; x = Math.min(Math.max(x, w/2), tb.width - w/2);
@@ -969,7 +969,7 @@ function listResults(){
   // 「すべての月から探す」：検索語かカテゴリの絞り込みがあるときだけ全期間から（何もないのに全件は長すぎるので今の月だけ）
   const all = S.qAll && (q || S.fCat!=="all");
   const txns = all ? allTxns().slice().sort((a,b)=>b.date.localeCompare(a.date)) : (S.months[ym]||[]);
-  const shown = txns.filter(t => (S.fCat==="all" || t.cat===S.fCat) && (!q || mkey(t.name).includes(q) || mkey(t.memo||"").includes(q)));
+  const shown = txns.filter(t => (S.fCat==="all" || t.cat===S.fCat) && (!q || mkey(t.name).includes(q) || mkey(t.memo||"").includes(q) || (S.fCat==="all" && mkey(catName(t.cat)).includes(q))));   // カテゴリ名で当てるのは「すべてのカテゴリ」のときだけ
   const sum = shown.reduce((s,t)=>s+t.amount,0);
   // 件数と合計は一覧の上に出す（利用者の希望）
   return shown.length ? `<div class="listfoot"><span>${all?"全期間 ":""}${shown.length}件</span><span>合計 <b class="num">${yen(sum)}</b></span></div>
@@ -1000,7 +1000,7 @@ function renderList(){
     </details>
     <div class="toolbar">
       <select id="fcat" aria-label="カテゴリで絞り込み"><option value="all">すべてのカテゴリ</option>${catOptions(S.fCat)}</select>
-      <input class="grow" type="search" id="q" placeholder="お店・内容で検索" value="${esc(S.q)}">
+      <input class="grow" type="search" id="q" placeholder="お店・内容・カテゴリで検索" value="${esc(S.q)}">
       <label class="check" title="カテゴリを変えたとき、同じお店を次回から自動で同じカテゴリにします"><input type="checkbox" id="learn" ${S.learn?"checked":""}>変更したお店を覚える</label>
       <label class="check"><input type="checkbox" id="qall" ${S.qAll?"checked":""}>すべての月から探す</label>
     </div>
@@ -1045,12 +1045,12 @@ function budgetPanel(){
   const base = [3,2,1].map(k=>Number(shiftYm(S.month,-k).slice(5))+"月").join("・");
   return `<section class="panel"><h2>予算<small>毎月同じ金額</small></h2>
       <form class="inline" id="budgetform"><input type="text" inputmode="numeric" id="btotal" placeholder="月の予算（例：200000）" value="${B.total||""}" aria-label="月の予算（円）"><button class="btn primary" type="submit">保存</button></form>
-      <p class="note">カテゴリ別の予算は、直近3か月の支出の割合で自動で配分します。家賃など決まった金額のカテゴリは、下に金額を入れると固定できます（空欄は自動）。0か空欄で保存すると予算を使いません。</p>
+      <p class="note">カテゴリ別の予算は、直近3か月の支出の割合で自動で配分します。家賃など決まった金額のカテゴリは、下に金額を入れると固定できます（空欄は自動）。0を入れると、そのカテゴリには予算を割り振りません。0か空欄で保存すると予算を使いません。</p>
       ${al ? `<p class="note" style="margin-top:12px"><b>${ymLabel(S.month)}の配分</b>（${base}の支出をもとに計算）</p>
         ${al.over ? `<p class="note" style="color:var(--danger)">固定した金額の合計が、月の予算を超えています。</p>` : ""}
         ${!al.base ? `<p class="note">直近3か月の明細がないため、自動の配分はまだできません。</p>` : ""}
         <div class="setlist">${S.cats.map(c=>`<div class="brow">${catIcon(c.id,24)}<span class="n">${esc(c.name)}</span>
-          <input type="text" inputmode="numeric" data-bfix="${esc(c.id)}" value="${B.fixed[c.id]||""}" placeholder="自動 ${yen(al.cats[c.id]||0)}" aria-label="${esc(c.name)}の予算（空欄は自動）"></div>`).join("")}</div>` : ""}
+          <input type="text" inputmode="numeric" data-bfix="${esc(c.id)}" value="${c.id in B.fixed ? B.fixed[c.id] : ""}" placeholder="自動 ${yen(al.cats[c.id]||0)}" aria-label="${esc(c.name)}の予算（空欄は自動）"></div>`).join("")}</div>` : ""}
     </section>`;
 }
 const toYenInt = v => { const n = parseInt(String(v).normalize("NFKC").replace(/[^\d]/g,""),10); return isNaN(n) ? 0 : n; };
@@ -1234,7 +1234,8 @@ document.addEventListener("change", async e => {
   if (t.id==="qall"){ S.qAll = t.checked; const box = document.getElementById("listres"); if (box) box.innerHTML = listResults(); return; }   // 検索欄は作り直さない
   if (t.dataset.cname){ const c = S.cats.find(x=>x.id===t.dataset.cname); const v=t.value.trim(); if (c && v){ c.name=v; markDirty("settings"); } else render(); return; }
   if (t.dataset.rkw!==undefined){ const v=t.value.trim(); if (v){ S.rules[+t.dataset.rkw].kw=v; markDirty("settings"); } else render(); return; }
-  if (t.dataset.bfix!==undefined){ const n = toYenInt(t.value); if (n>0) S.budget.fixed[t.dataset.bfix] = n; else delete S.budget.fixed[t.dataset.bfix]; markDirty("settings"); render(); return; }
+  if (t.dataset.bfix!==undefined){ if (t.value.trim()==="") delete S.budget.fixed[t.dataset.bfix]; else S.budget.fixed[t.dataset.bfix] = toYenInt(t.value);   // 空欄は自動、0を含む数字は固定
+    markDirty("settings"); render(); return; }
   if (t.dataset.rcat!==undefined){ S.rules[+t.dataset.rcat].cat=t.value; markDirty("settings"); return; }
   if (t.id==="restore"){
     const f = t.files[0]; t.value=""; if (!f) return;
