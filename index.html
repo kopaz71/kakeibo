@@ -105,13 +105,19 @@ input,select,textarea{font-size:16px!important}
 .chip:hover{filter:brightness(.97)}
 
 /* category bars */
+.donut{position:relative;width:min(64vw,220px);aspect-ratio:1;margin:4px auto 14px}
+.donut svg{display:block;width:100%;height:100%;transform:rotate(-90deg)}
+.donut circle{fill:none}
+.donut .bgr{stroke:var(--grid)}
+.donut .sl{cursor:pointer}
+.donut .sl:hover{filter:brightness(.92)}
+.donut .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.donut .ctr span{font-size:12px;color:var(--muted)}
+.donut .ctr b{font-size:clamp(17px,5.4vw,21px);font-weight:700;color:var(--ink)}
 .cbars{display:flex;flex-direction:column;gap:2px}
-.cbar{display:grid;grid-template-columns:8.2em 1fr auto;align-items:center;gap:10px;padding:5px 6px;border-radius:7px;border:0;background:transparent;text-align:left;cursor:pointer;width:100%}
+.cbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:5px 6px;border-radius:7px;border:0;background:transparent;text-align:left;cursor:pointer;width:100%}
 .cbar:hover{background:var(--surface-2)}
 .cbar .n{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cbar .track{height:10px;background:var(--grid);border-radius:0 4px 4px 0;overflow:hidden}
-.cbar .fill{height:100%;background:var(--bar);border-radius:0 4px 4px 0;min-width:2px}
-.cbar.none .fill{background:var(--warn)}
 .cbar .v{font-size:13px;text-align:right;white-space:nowrap}
 .cbar .v span{color:var(--muted);font-size:11px;margin-left:6px;display:inline-block;min-width:3.2em}
 
@@ -169,7 +175,6 @@ input:focus,select:focus{border-color:var(--accent)}
   .row .nm{grid-area:nm}.row .a{grid-area:a}.row .icon-btn{grid-area:x}
   .row .d{grid-area:d}.row .cat{grid-area:c}
   .row.head{display:none}
-  .cbar{grid-template-columns:8.4em 1fr auto}.cbar .v{min-width:0}
 }
 
 .addform{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;align-items:end}
@@ -249,9 +254,9 @@ details.add .addform{padding:12px;background:var(--surface-2);border-radius:10px
 /* motion */
 #view{touch-action:pan-y}
 @media (prefers-reduced-motion:no-preference){
-  #view.grow .cbar .fill{animation:gx .7s cubic-bezier(.2,.8,.2,1) both;transform-origin:left;animation-delay:calc(var(--i,0) * 45ms + 80ms)}
+  #view.grow .donut .sweep{animation:sweep .8s cubic-bezier(.3,.7,.2,1) .08s both}
   #view.grow .col .b, .trend.grow .col .b{animation:gy .65s cubic-bezier(.2,.8,.2,1) both;transform-origin:bottom;animation-delay:calc(var(--i,0) * 35ms + 120ms)}
-  @keyframes gx{from{transform:scaleX(0)}}
+  @keyframes sweep{from{stroke-dashoffset:100}}
   @keyframes gy{from{transform:scaleY(0)}}
 }
 </style>
@@ -640,6 +645,18 @@ function trendChart(id, months, vals, cur, avg){
   const av = avg ? `<div class="avg" style="bottom:calc(22px + ${avg/mx} * (100% - 22px))"><span>平均 ${short(avg)}</span></div>` : "";
   return `<div class="trend" id="${id}">${grid}${av}<div class="cols">${cols}</div></div>`;
 }
+function catDonut(cats, total){
+  const pos = cats.filter(([,v])=>v>0), sum = pos.reduce((s,[,v])=>s+v,0);
+  if (!sum) return "";
+  const gap = pos.length>1 ? .5 : 0; let at = 0;
+  const sl = pos.map(([c,v])=>{ const p = v/sum*100, len = Math.max(p-gap, .4);
+    const el = `<circle class="sl" cx="21" cy="21" r="15.915" pathLength="100" stroke-width="6" stroke="${ICONS[iconKey(c)]?.[0]||ICONS.tag[0]}" stroke-dasharray="${len.toFixed(2)} 100" stroke-dashoffset="${(-at).toFixed(2)}" data-fcat="${esc(c)}"/>`;
+    at += p; return el; }).join("");
+  return `<div class="donut"><svg viewBox="0 0 42 42" aria-hidden="true">
+    <mask id="dmask"><circle class="sweep" cx="21" cy="21" r="15.915" pathLength="100" stroke="#fff" stroke-width="8" stroke-dasharray="100 100"/></mask>
+    <circle class="bgr" cx="21" cy="21" r="15.915" stroke-width="6"/><g mask="url(#dmask)">${sl}</g></svg>
+    <div class="ctr"><span>支出</span><b class="num">${yen(total)}</b></div></div>`;
+}
 function catTrend(ym){
   const first = Object.keys(S.months).sort()[0] || ym;
   const months = Array.from({length:12},(_,i)=>shiftYm(ym,i-11)).filter(m => m>=first || m===ym);
@@ -672,8 +689,8 @@ function renderOverview(){
   // categories
   const by = {}; for (const t of txns) by[t.cat]=(by[t.cat]||0)+t.amount;
   const cats = Object.entries(by).filter(([,v])=>v!==0).sort((a,b)=>b[1]-a[1]);
-  const cmax = Math.max(...cats.map(c=>c[1]),1);
-  const cbars = cats.map(([c,v],i)=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${catIcon(c,22)}<b>${esc(catName(c))}</b></span><span class="track"><span class="fill" style="display:block;width:${Math.max(0,v)/cmax*100}%;--i:${i}"></span></span><span class="v num">${yen(v)}<span>${total?Math.round(v/total*100):0}%</span></span></button>`).join("");
+  const psum = cats.reduce((s,[,v])=>s+Math.max(0,v),0);
+  const cbars = cats.map(([c,v])=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${catIcon(c,22)}<b>${esc(catName(c))}</b></span><span class="v num">${yen(v)}<span>${v>0&&psum?Math.round(v/psum*100)+"%":"—"}</span></span></button>`).join("");
   // shops
   const bs = {}; for (const t of txns){ const k=t.name; (bs[k] ||= {v:0,n:0}); bs[k].v+=t.amount; bs[k].n++; }
   const shops = Object.entries(bs).sort((a,b)=>b[1].v-a[1].v).slice(0,6);
@@ -692,7 +709,7 @@ function renderOverview(){
       ${unc.length ? `<button type="button" class="chip" data-fcat="none">未分類 ${unc.length}件 を確認</button>` : ""}
     </div>
     <div class="grid g2">
-      <section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2><div class="cbars">${cbars}</div></section>
+      <section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2>${catDonut(cats, total)}<div class="cbars">${cbars}</div></section>
       <section class="panel"><h2>月別の支出<small>棒をタップで明細へ</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
       ${heat}
       <section class="panel"><h2>よく使ったお店<small>金額順</small></h2><ul class="shops">${shops.map(([n,o])=>`<li><span>${esc(n)}<span class="c">${o.n}回</span></span><span class="num">${yen(o.v)}</span></li>`).join("")}</ul></section>
