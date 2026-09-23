@@ -284,13 +284,13 @@ details.add .addform{padding:12px;background:var(--surface-2);border-radius:10px
 /* ---------- defaults ---------- */
 const NONE = "none";
 const DEFAULT_CATS = [
-  ["food","食費"],["eatout","外食"],["daily","日用品"],["transport","交通費"],["housing","住居費"],
+  ["food","食費"],["daily","日用品"],["transport","交通費"],["housing","住居費"],
   ["utility","水道光熱費"],["telecom","通信費"],["subsc","サブスク"],["hobby","趣味・娯楽"],
-  ["medical","医療・健康"],["fashion","衣服・美容"],["social","交際費"],["edu","教養・書籍"],["other","その他"]
+  ["medical","医療・健康"],["fashion","衣服"],["beauty","美容"],["social","交際費"],["edu","教養・書籍"],["other","その他"]
 ].map(([id,name]) => ({id,name,icon:null}));
 const DEFAULT_RULES = Object.entries({
   food:"セブン-イレブン,ファミリーマート,ローソン,ミニストップ,デイリーヤマザキ,イオン,イトーヨーカドー,西友,ライフ,まいばすけっと,業務スーパー,オーケー,成城石井,マルエツ,サミット",
-  eatout:"ウーバーイーツ,出前館,マクドナルド,スターバックス,ドトール,タリーズ,すき家,吉野家,松屋,ガスト,サイゼリヤ,モスバーガー,ケンタッキー,スシロー,くら寿司",
+  food2:"ウーバーイーツ,出前館,マクドナルド,スターバックス,ドトール,タリーズ,すき家,吉野家,松屋,ガスト,サイゼリヤ,モスバーガー,ケンタッキー,スシロー,くら寿司",
   daily:"アマゾン,amazon,マツキヨ,マツモトキヨシ,ウエルシア,ツルハ,スギ薬局,サンドラッグ,ココカラファイン,ダイソー,セリア,ニトリ,無印良品,ロフト,ドラッグ",
   transport:"エキネット,suica,pasmo,icoca,jr東日本,jr西日本,東京メトロ,タクシー,go タクシー,eneos,エネオス,出光,コスモ石油,タイムズ",
   housing:"大東建託,レオパレス,家賃",
@@ -299,9 +299,10 @@ const DEFAULT_RULES = Object.entries({
   subsc:"ネットフリックス,netflix,spotify,openai,chatgpt,apple.com,youtube,amazonプライム,アマゾンプライム,disney,u-next,dazn,adobe,microsoft,hulu,abema",
   hobby:"nintendo,任天堂,プレイステーション,playstation,グーグルプレイ,google play,steam,コミックシーモア,kindle,tohoシネマズ,イオンシネマ",
   medical:"病院,クリニック,歯科,調剤薬局",
-  fashion:"ユニクロ,しまむら,zara,h&m,美容室,ヘアサロン",
+  fashion:"ユニクロ,しまむら,zara,h&m,ワークマン,ABCマート",
+  beauty:"美容室,ヘアサロン,美容院,ネイル,ホットペッパービューティー,理容,ヘアカット,QBハウス",
   edu:"紀伊國屋,丸善,ジュンク堂,蔦屋書店,ブックオフ,書店"
-}).flatMap(([cat,list]) => list.split(",").map(kw => ({kw, cat})));
+}).flatMap(([cat,list]) => list.split(",").map(kw => ({kw, cat: cat==="food2" ? "food" : cat})));
 
 /* ---------- category icons ---------- */
 const ICONS = {
@@ -337,7 +338,7 @@ const ICONS = {
   question:["#b4600a","M9 9a3 3 0 1 1 4 2.8c-.8.4-1 1-1 1.7 M12 17h.01"]
 };
 const PICKABLE = Object.keys(ICONS).filter(k => k!=="question");
-const DEFAULT_ICON = {food:"rice",eatout:"utensils",daily:"bag",transport:"train",housing:"house",utility:"bolt",telecom:"phone",
+const DEFAULT_ICON = {food:"rice",eatout:"utensils",beauty:"scissors",daily:"bag",transport:"train",housing:"house",utility:"bolt",telecom:"phone",
   subsc:"repeat",hobby:"game",medical:"cross",fashion:"shirt",social:"gift",edu:"book",other:"dots"};
 const iconKey = id => id===NONE ? "question" : ((S.cats.find(c=>c.id===id)||{}).icon || DEFAULT_ICON[id] || "tag");
 function iconSvg(key, size){
@@ -392,7 +393,7 @@ function classify(name){
 
 /* ---------- sample data (fictional) ---------- */
 function makeSample(){
-  const shops = [["まちかどマート","food",600,1800,14],["あおば食堂","eatout",900,2400,5],["くすのき薬局","daily",700,3800,3],
+  const shops = [["まちかどマート","food",600,1800,14],["あおば食堂","food",900,2400,5],["くすのき薬局","daily",700,3800,3],
     ["みなと電鉄","transport",420,1600,8],["ひかり電力","utility",6200,8400,1],["つばめ通信","telecom",4600,4600,1],
     ["そよかぜハイツ家賃","housing",78000,78000,1],["ほしぞら動画","subsc",990,990,1],["こもれび書房","edu",800,2600,2],["ゆうやけゲームス","hobby",1500,5500,1]];
   const out = {}; let seed = 7; const rnd = () => (seed = (seed*9301+49297)%233280)/233280;
@@ -428,7 +429,7 @@ function flush(){
   });
   return chain;
 }
-function settingsBody(){ return {v:1, cats:S.cats, rules:S.rules}; }
+function settingsBody(){ return {v:2, cats:S.cats, rules:S.rules}; }
 async function writeDoc(id){
   if (store.mode==="db"){
     const ref = store.db.collection("data/users/"+store.uid).doc(id);
@@ -443,6 +444,27 @@ async function writeDoc(id){
 function applyLoaded(settings, months){
   if (settings && Array.isArray(settings.cats)) { S.cats = settings.cats; S.rules = Array.isArray(settings.rules)?settings.rules:[]; }
   if (months && Object.keys(months).length){ S.months = months; S.sample = false; S.month = latestMonth(); }
+  if (settings && Array.isArray(settings.cats) && !(settings.v >= 2)) migrateV2();
+}
+// 旧バージョンの設定を新しい既定カテゴリに合わせる（1回だけ）
+//  ・「外食」→「食費」にまとめる　・「衣服・美容」→「衣服」と「美容」に分ける
+function migrateV2(){
+  const ch = new Set(["settings"]);
+  if (S.cats.some(c => c.id==="eatout")){
+    for (const [m,arr] of Object.entries(S.months)) for (const t of arr) if (t.cat==="eatout"){ t.cat = "food"; ch.add("m-"+m); }
+    for (const r of S.rules) if (r.cat==="eatout") r.cat = "food";
+    S.cats = S.cats.filter(c => c.id!=="eatout");
+  }
+  const f = S.cats.find(c => c.id==="fashion");
+  if (f && f.name==="衣服・美容" && !S.cats.some(c => c.id==="beauty")){
+    f.name = "衣服";
+    S.cats.splice(S.cats.indexOf(f)+1, 0, {id:"beauty", name:"美容", icon:null});
+    const beautyKw = DEFAULT_RULES.filter(r => r.cat==="beauty");
+    for (const r of S.rules) if (r.cat==="fashion" && beautyKw.some(b => mkey(b.kw)===mkey(r.kw))) r.cat = "beauty";
+    for (const b of beautyKw) if (!S.rules.some(r => mkey(r.kw)===mkey(b.kw))) S.rules.push({...b});
+    for (const [m,arr] of Object.entries(S.months)) for (const t of arr) if (t.cat==="fashion" && !t.locked){ const c = classify(t.name); if (c==="beauty"){ t.cat = c; ch.add("m-"+m); } }
+  }
+  for (const id of ch) markDirty(id);
 }
 async function initStorage(){
   let db = null, user = null;
