@@ -20,7 +20,7 @@
   --warn:#9a5208; --warn-soft:#fbeedc; --danger:#b3261e; --danger-soft:#f9e1de; --good:#1d6f36;
   --shadow:0 1px 2px rgba(20,32,27,.04),0 6px 20px rgba(20,32,27,.06);
   --hair:rgba(20,32,27,.1); --radius:18px; --radius-sm:12px;
-  --tabbar:color-mix(in srgb, var(--surface) 78%, transparent); --scrim:rgba(10,16,13,.42);
+  --tabbar:color-mix(in srgb, var(--surface) 78%, transparent); --scrim:rgba(10,16,13,.42); --budget:#c26a00;
   --pig:#e98ea6; --pig-ink:#6b2438;
   --sans:system-ui,-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP",sans-serif;
   --mono:ui-monospace,"SF Mono","SFMono-Regular","Roboto Mono",Menlo,monospace;
@@ -32,7 +32,7 @@
     --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
     --bar:#4fb192; --bar-dim:#2c4a40; --grid:#232b27;
     --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --good:#6fd08c;
-    --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --pig:#f0a3b8; --pig-ink:#4a1626;
+    --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --budget:#f0a750; --pig:#f0a3b8; --pig-ink:#4a1626;
   }
 }
 :root[data-theme="dark"]{
@@ -41,7 +41,7 @@
   --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
   --bar:#4fb192; --bar-dim:#2c4a40; --grid:#232b27;
   --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --good:#6fd08c;
-  --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --pig:#f0a3b8; --pig-ink:#4a1626;
+  --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --budget:#f0a750; --pig:#f0a3b8; --pig-ink:#4a1626;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -157,7 +157,7 @@ input,select,textarea{font-size:16px!important}
 .col:hover .b{filter:brightness(.92)}
 .col .x{position:absolute;bottom:-20px;font-size:10px;color:var(--muted);white-space:nowrap}
 .col.cur .x{color:var(--ink);font-weight:700}
-.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:5px 9px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-100%);z-index:3}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:5px 9px;border-radius:6px;white-space:pre;text-align:center;line-height:1.45;transform:translate(-50%,-100%);z-index:3}
 
 .shops{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .shops li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
@@ -294,6 +294,12 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
 .ctsum{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--ink-2);margin:2px 0 16px}
 .ctsum b{color:var(--ink);font-weight:600}
 .ctsum .up{color:var(--danger)} .ctsum .down{color:var(--good)}
+.col .bgt{position:absolute;left:6%;right:6%;border-top:2px solid var(--budget);pointer-events:none;z-index:1}
+.col.over .b{background:var(--danger-soft)}
+.col.over.cur .b{background:var(--danger)}
+.tlegend{display:flex;justify-content:flex-end;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
+.tlegend .lb::before{content:"";display:inline-block;width:14px;border-top:2px solid var(--budget);vertical-align:middle;margin-right:5px}
+.tlegend .la::before{content:"";display:inline-block;width:14px;border-top:1.5px dashed var(--ink-2);vertical-align:middle;margin-right:5px;opacity:.7}
 .trend .avg{position:absolute;left:42px;right:0;border-top:1.5px dashed var(--ink-2);z-index:2;pointer-events:none;opacity:.7}
 .trend .avg span{position:absolute;right:0;top:-18px;font-size:10px;color:var(--ink-2);background:var(--surface);padding:0 4px;border-radius:3px;font-family:var(--mono)}
 
@@ -738,12 +744,16 @@ function render(){
   renderSheet();
 }
 
-function trendChart(id, months, vals, cur, avg){
-  const mx = niceMax(Math.max(...vals, avg||0, 1));
+// budgets：月ごとの予算（無い月は null）。あれば各棒に予算の高さの線（.bgt）を引き、超えた月の棒を赤くする
+function trendChart(id, months, vals, cur, avg, budgets){
+  const bs = budgets || [];
+  const mx = niceMax(Math.max(...vals, avg||0, ...bs.map(b=>b||0), 1));
   const grid = [0,.5,1].map(f=>`<div class="gl${f===0?" base":""}" style="bottom:calc(22px + ${f} * (100% - 22px))"><span>${f? short(mx*f):"0"}</span></div>`).join("");
-  const cols = months.map((m,i)=>`<button type="button" class="col${m===cur?" cur":""}" data-ym="${m}" data-v="${vals[i]}" aria-label="${ymLabel(m)} ${yen(vals[i])}"><div class="b" style="height:${Math.max(0,vals[i])/mx*100}%;--i:${i}"></div><span class="x">${Number(m.slice(5))}${months.length>8?"":"月"}</span></button>`).join("");
+  const cols = months.map((m,i)=>{ const b = bs[i]>0 ? bs[i] : null, over = b!==null && vals[i]>b;
+    return `<button type="button" class="col${m===cur?" cur":""}${over?" over":""}" data-ym="${m}" data-v="${vals[i]}"${b!==null?` data-b="${b}"`:""} aria-label="${ymLabel(m)} ${yen(vals[i])}${b!==null?`、予算 ${yen(b)}`:""}"><div class="b" style="height:${Math.max(0,vals[i])/mx*100}%;--i:${i}"></div>${b!==null?`<i class="bgt" style="bottom:${b/mx*100}%"></i>`:""}<span class="x">${Number(m.slice(5))}${months.length>8?"":"月"}</span></button>`; }).join("");
   const av = avg ? `<div class="avg" style="bottom:calc(22px + ${avg/mx} * (100% - 22px))"><span>平均 ${short(avg)}</span></div>` : "";
-  return `<div class="trend" id="${id}">${grid}${av}<div class="cols">${cols}</div></div>`;
+  const lg = bs.some(b=>b>0) ? `<div class="tlegend" aria-hidden="true"><span class="lb">予算</span>${avg?`<span class="la">平均</span>`:""}</div>` : "";
+  return `<div class="trend" id="${id}">${grid}${av}<div class="cols">${cols}</div></div>${lg}`;
 }
 function catDonut(cats, total){
   const pos = cats.filter(([,v])=>v>0), sum = pos.reduce((s,[,v])=>s+v,0);
@@ -775,7 +785,7 @@ function catTrend(ym){
     <div class="ctsum"><span>${Number(ym.slice(5))}月 <b class="num">${yen(cur)}</b></span>
       ${months.includes(prevYm) ? `<span>前月差 <b class="num ${dv>0?"up":dv<0?"down":""}">${dv>0?"▲":dv<0?"▼":"±"}${yen(Math.abs(dv))}</b></span>` : ""}
       <span>${months.length}か月平均 <b class="num">${yen(avg)}</b></span></div>
-    ${trendChart("ctrend", months, vals, ym, avg).replace('id="ctrend"', `id="ctrend" data-cat="${esc(sel)}"`)}
+    ${trendChart("ctrend", months, vals, ym, avg, months.map(m => budgetAlloc(m)?.cats[sel] || null)).replace('id="ctrend"', `id="ctrend" data-cat="${esc(sel)}"`)}
   </section>`;
 }
 
@@ -866,7 +876,7 @@ function renderYear(){
     </div>
     <div class="grid g2">
       ${catPanel(txns, total, ycats)}
-      <section class="panel"><h2>${y}年の月ごとの支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", yms, vals, ym, avg)}</section>
+      <section class="panel"><h2>${y}年の月ごとの支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", yms, vals, ym, avg, yms.map(()=>S.budget.total||null))}</section>
       ${shopPanel(txns)}
     </div>`);
   return total;
@@ -887,6 +897,8 @@ function renderMonth(){
   const unc = txns.filter(t=>t.cat===NONE);
   const months = Array.from({length:12},(_,i)=>shiftYm(ym,i-11)).filter(m => m>= (Object.keys(S.months).sort()[0]||ym) || m===ym);
   const vals = months.map(m=>monthTotal(m));
+  const withData = months.filter(m => (S.months[m]||[]).length);                               // 平均は明細のある月だけで割る
+  const mAvg = withData.length ? Math.round(withData.reduce((a,m)=>a+monthTotal(m),0)/withData.length) : 0;
   const heat = catTrend(ym);
   const d = total - prev, dp = prev ? Math.round(d/prev*100) : null, prevN = (S.months[shiftYm(ym,-1)]||[]).length;
   const pym = shiftYm(ym,-1), nym = shiftYm(ym,1), nTot = monthTotal(nym), nN = (S.months[nym]||[]).length;
@@ -900,7 +912,7 @@ function renderMonth(){
     </div>
     <div class="grid g2">
       ${catPanel(txns, total, alloc?.cats)}
-      <section class="panel"><h2>月別の支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
+      <section class="panel"><h2>月別の支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", months, vals, ym, mAvg, months.map(()=>S.budget.total||null))}</section>
       ${heat}
       ${shopPanel(txns)}
     </div>`);
@@ -908,10 +920,14 @@ function renderMonth(){
 }
 function showTip(tr, c){
   tr.querySelector(".tip")?.remove(); const r = c.getBoundingClientRect(), tb = tr.getBoundingClientRect(), b = c.querySelector(".b").getBoundingClientRect();
-  const tip = document.createElement("div"); tip.className="tip"; tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(+c.dataset.v)}`;
-  let x = r.left - tb.left + r.width/2; x = Math.min(Math.max(x, 70), tb.width-70);
-  tip.style.left = x+"px"; tip.style.top = (b.top - tb.top - 6)+"px";   // 棒の先端の上に出す（背の高い棒では見出しにかぶってもよい）
+  const v = +c.dataset.v, bg = c.dataset.b ? +c.dataset.b : null;
+  const tip = document.createElement("div"); tip.className="tip";
+  tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(v)}` + (bg!==null ? `\n予算 ${yen(bg)}` + (v>bg ? `・${yen(v-bg)} オーバー` : `・残り ${yen(bg-v)}`) : "");
+  const line = c.querySelector(".bgt"), top = Math.min(b.top, line ? line.getBoundingClientRect().top : Infinity);
+  tip.style.top = (top - tb.top - 6)+"px";   // 棒の先端（予算の線が上ならその線）の上に出す。背の高い棒では見出しにかぶってもよい
   tr.appendChild(tip);
+  const w = tip.offsetWidth; let x = r.left - tb.left + r.width/2; x = Math.min(Math.max(x, w/2), tb.width - w/2);
+  tip.style.left = x+"px";
 }
 function bindTip(tr){
   tr.addEventListener("pointerover", e => { const c = e.target.closest(".col"); if (c && e.pointerType==="mouse") showTip(tr, c); });
