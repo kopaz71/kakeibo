@@ -250,6 +250,7 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
 
 .ptr{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);z-index:30;background:var(--surface);color:var(--ink-2);box-shadow:var(--shadow);border-radius:999px;padding:7px 16px;font-size:13px;font-weight:600;white-space:nowrap}
 .ptr.ready{color:var(--accent)}
+.aitext{display:block;width:100%;height:280px;margin-top:10px;padding:10px 12px;border:0;border-radius:10px;background:var(--surface-2);color:var(--ink);font-family:var(--mono);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;overflow:auto;resize:vertical}
 .toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-size:13px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);z-index:10;width:max-content;max-width:calc(100% - 32px)}
 .toast span{min-width:0}
 .toast button{flex:none;white-space:nowrap}
@@ -446,7 +447,8 @@ const S = {
   cats: DEFAULT_CATS.map(c=>({...c})), rules: DEFAULT_RULES.map(r=>({...r})),
   months: {}, sample: true, month: null, tab: "overview",
   fCat: "all", q: "", learn: true, importLog: null, armed: null, pendingImport: null, rq: "",
-  budget: { total: 0, fixed: {} }   // 月の予算（total）と、手で固定したカテゴリの金額（fixed: {カテゴリid: 金額}）
+  budget: { total: 0, fixed: {} },   // 月の予算（total）と、手で固定したカテゴリの金額（fixed: {カテゴリid: 金額}）
+  aiRange: 3, aiShops: false, aiOpen: false   // 「AIで分析」の期間・お店の名前を含めるか・内容を表示中か
 };
 try { const t = localStorage.getItem("kkb-tab"); if (t) S.tab = t; } catch(e){}
 const catName = id => id===NONE ? "未分類" : (S.cats.find(c=>c.id===id)?.name ?? "未分類");
@@ -1043,6 +1045,70 @@ function ruleRows(){
           <select data-rcat="${i}" aria-label="分類先">${catOptions(r.cat)}</select>
           <button type="button" class="icon-btn" data-rdel="${i}" aria-label="ルールを削除">×</button></div>`).join("") || `<p class="note">該当するルールはありません。</p>`;
 }
+/* ---------- AIで分析（集計をAIに貼りやすい文章にしてコピー。アプリからは送信しない） ---------- */
+function aiSummary(n, withShops){
+  const end = S.month, months = Array.from({length:n}, (_,i) => shiftYm(end, i-(n-1)));
+  const has = months.filter(m => (S.months[m]||[]).length);
+  const txns = months.flatMap(m => S.months[m]||[]);
+  const L = [];
+  L.push(`# 家計簿の集計（${ymLabel(months[0])}〜${ymLabel(end)}）`, "");
+  if (S.sample) L.push("※架空のサンプルデータです。", "");
+  L.push("楽天カードの明細と、現金などの手入力の支出を、カテゴリ別に集計したものです。金額は円で、マイナスは返金です。"
+    + (S.budget.total>0 ? "「▲」は予算を超えた金額です。" : ""), "");
+  // 月ごと
+  L.push("## 月ごとの支出", "");
+  for (const m of months){
+    const cnt = (S.months[m]||[]).length, tot = monthTotal(m), al = budgetAlloc(m);
+    L.push(`- ${ymLabel(m)}：` + (cnt ? `${yen(tot)}（${cnt}件` + (al ? `、予算 ${yen(al.total)}、${tot>al.total ? `▲${yen(tot-al.total)}` : `残り ${yen(al.total-tot)}`}` : "") + "）" : "明細なし"));
+  }
+  if (has.length) L.push(`- 月平均（明細のある${has.length}か月）：${yen(Math.round(has.reduce((a,m)=>a+monthTotal(m),0)/has.length))}`);
+  L.push("");
+  // カテゴリ別の表
+  const by = {}; for (const m of months) for (const t of (S.months[m]||[])) { (by[t.cat] ||= {}); by[t.cat][m] = (by[t.cat][m]||0) + t.amount; }
+  const catIds = Object.keys(by).sort((a,b) => months.reduce((s,m)=>s+(by[b][m]||0)-(by[a][m]||0),0));
+  const alEnd = budgetAlloc(end);
+  if (catIds.length){
+    const col = m => m.replace("-","/");
+    L.push("## カテゴリ別の支出（月ごと）", "");
+    L.push(`| カテゴリ | ${months.map(col).join(" | ")} | 平均 |${alEnd ? ` 予算（${col(end)}） |` : ""}`);
+    L.push(`|---|${months.map(()=>"---:").join("|")}|---:|${alEnd ? "---:|" : ""}`);
+    for (const c of catIds){
+      const vals = months.map(m => by[c][m]||0), avg = has.length ? Math.round(has.reduce((a,m)=>a+(by[c][m]||0),0)/has.length) : 0;
+      L.push(`| ${catName(c)} | ${vals.map(yen).join(" | ")} | ${yen(avg)} |${alEnd ? ` ${c in alEnd.cats ? yen(alEnd.cats[c]) : "—"} |` : ""}`);
+    }
+    L.push("");
+  }
+  // 予算の設定
+  if (S.budget.total>0){
+    const fx = Object.entries(S.budget.fixed).filter(([c]) => S.cats.some(x=>x.id===c));
+    L.push("## 予算の設定", "", `- 月の予算：${yen(S.budget.total)}`,
+      `- 金額を固定しているカテゴリ：${fx.length ? fx.map(([c,v])=>`${catName(c)} ${yen(v)}`).join("、") : "なし"}`,
+      "- それ以外のカテゴリは、直近3か月の支出の割合で自動配分しています", "");
+  }
+  // お店（チェックがオンのときだけ）
+  if (withShops && txns.length){
+    const bs = {}; for (const t of txns){ (bs[t.name] ||= {v:0,n:0,ms:new Set()}); bs[t.name].v += t.amount; bs[t.name].n++; bs[t.name].ms.add(ymOf(t.date)); }
+    const top = Object.entries(bs).sort((a,b)=>b[1].v-a[1].v).slice(0,10);
+    L.push("## よく使ったお店（期間の合計・上位10）", "", ...top.map(([n,o]) => `- ${n}：${yen(o.v)}（${o.n}回）`), "");
+    if (has.length>=2){
+      const every = Object.entries(bs).filter(([,o]) => has.every(m => o.ms.has(m))).sort((a,b)=>b[1].v-a[1].v);
+      L.push("## 毎月の支払いの候補（明細のあるすべての月に出てくるお店）", "",
+        ...(every.length ? every.map(([n,o]) => `- ${n}：月平均 ${yen(Math.round(o.v/has.length))}`) : ["- なし"]), "");
+    }
+  }
+  L.push("## 相談したいこと", "", "上の集計をもとに、次のことを具体的な金額を挙げて教えてください。",
+    "1. 支出の傾向と、増えているカテゴリ", "2. 節約できそうなところ", "3. 来月の予算の配分案");
+  return L.join("\n");
+}
+function aiPanel(){
+  return `<section class="panel"><h2>AIで分析<small>コピーして貼り付け</small></h2>
+      <p class="note" style="margin:0 0 10px">集計をAIに貼り付けやすい文章にしてコピーします。Claude などのAIアプリに貼り付けて、相談に使ってください。このアプリからは送信しません。何を渡すかは「内容を見る」で確かめられます。</p>
+      <div class="inline"><select id="aiRange" aria-label="集計する期間">${[3,6,12].map(n=>`<option value="${n}"${S.aiRange===n?" selected":""}>直近${n}か月</option>`).join("")}</select>
+        <label class="check"><input type="checkbox" id="aiShops" ${S.aiShops?"checked":""}>お店の名前を含める</label></div>
+      <div class="inline" style="margin-top:10px"><button type="button" class="btn" id="aiView">${S.aiOpen?"内容を閉じる":"内容を見る"}</button><button type="button" class="btn primary" id="aiCopy">AI用にコピー</button></div>
+      ${S.aiOpen ? `<textarea id="aiText" class="aitext" readonly aria-label="コピーする内容">${esc(aiSummary(S.aiRange, S.aiShops))}</textarea>` : ""}
+    </section>`;
+}
 function budgetPanel(){
   const B = S.budget, al = budgetAlloc(S.month);
   const base = [3,2,1].map(k=>Number(shiftYm(S.month,-k).slice(5))+"月").join("・");
@@ -1069,6 +1135,7 @@ function renderSettings(){
         <p class="note">${backupNote()}</p>
         <div id="exportbox"></div>
 </section>
+      ${aiPanel()}
       ${budgetPanel()}
       <section class="panel"><h2>カテゴリ<small>丸をタップでアイコン変更</small></h2>
         <div class="setlist">${S.cats.map(c=>`<div class="setrow">
@@ -1200,6 +1267,14 @@ document.addEventListener("click", async e => {
     S.armed=null; for (const ym of Object.keys(S.months)) { delete S.months[ym]; markDirty("m-"+ym); }
     S.cats = DEFAULT_CATS.map(c=>({...c})); S.rules = DEFAULT_RULES.map(r=>({...r})); S.budget = normBudget(null); markDirty("settings");
     S.months = makeSample(); S.sample = true; S.month = latestMonth(); S.importLog=null; toast("すべてのデータを削除しました"); render(); return; }
+  if (t.id==="aiView"){ S.aiOpen = !S.aiOpen; render(); return; }
+  if (t.id==="aiCopy"){
+    const text = aiSummary(S.aiRange, S.aiShops);
+    try { await navigator.clipboard.writeText(text); toast("コピーしました。AIアプリに貼り付けてください"); }
+    catch(err){   // コピーできない環境では内容を開いて全選択し、手でコピーしてもらう
+      S.aiOpen = true; render(); const ta = document.getElementById("aiText"); if (ta){ ta.focus(); ta.select(); }
+      toast("自動でコピーできませんでした。表示した内容を長押しして、コピーしてください"); }
+    return; }
   if (t.id==="export"){
     const data = JSON.stringify({app:"kakeibo", v:1, exportedAt:new Date().toISOString(), cats:S.cats, rules:S.rules, budget:S.budget, months:S.sample?{}:S.months}, null, 1);
     const name = `kakeibo-backup-${new Date().toISOString().slice(0,10)}.json`;
@@ -1234,6 +1309,9 @@ document.addEventListener("change", async e => {
   if (t.classList.contains("mpick")){ const v = t.value; S.month = v.length===4 ? v + S.month.slice(4) : v; nextAnim = "month"; render(); return; }
   if (t.id==="fcat"){ S.fCat = t.value; render(); return; }
   if (t.id==="learn"){ S.learn = t.checked; return; }
+  if (t.id==="aiRange" || t.id==="aiShops"){   // 内容の欄だけ差し替える
+    if (t.id==="aiRange") S.aiRange = +t.value; else S.aiShops = t.checked;
+    const ta = document.getElementById("aiText"); if (ta) ta.value = aiSummary(S.aiRange, S.aiShops); return; }
   if (t.id==="qall"){ S.qAll = t.checked; const box = document.getElementById("listres"); if (box) box.innerHTML = listResults(); return; }   // 検索欄は作り直さない
   if (t.dataset.cname){ const c = S.cats.find(x=>x.id===t.dataset.cname); const v=t.value.trim(); if (c && v){ c.name=v; markDirty("settings"); } else render(); return; }
   if (t.dataset.rkw!==undefined){ const v=t.value.trim(); if (v){ S.rules[+t.dataset.rkw].kw=v; markDirty("settings"); } else render(); return; }
