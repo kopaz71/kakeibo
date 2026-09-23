@@ -248,6 +248,8 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
 .confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;background:var(--danger-soft);border-radius:var(--radius-sm);margin-top:10px;font-size:13px}
 .store{font-size:12px;color:var(--muted);margin-top:28px;text-align:center}
 
+.ptr{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%);z-index:30;background:var(--surface);color:var(--ink-2);box-shadow:var(--shadow);border-radius:999px;padding:7px 16px;font-size:13px;font-weight:600;white-space:nowrap}
+.ptr.ready{color:var(--accent)}
 .toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-size:13px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);z-index:10;width:max-content;max-width:calc(100% - 32px)}
 .toast span{min-width:0}
 .toast button{flex:none;white-space:nowrap}
@@ -342,6 +344,7 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
   <p class="store" id="store"></p>
 </div>
 <div id="toast-host"></div>
+<div id="ptr" class="ptr" role="status" hidden></div>
 <div id="sheet-host"></div>
 
 <script>
@@ -1297,6 +1300,55 @@ if ("serviceWorker" in navigator && window.isSecureContext){
   }).catch(()=>{});
 }
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+
+// 引っ張って更新：一番上で下に引っ張って離すと、新しい版を確かめる（利用者の希望）。
+// 新しい版があれば保存待ちを書き込んでから読み直す。なければ「最新の版です」と知らせるだけ。
+// 表示は上の小さな案内だけで、画面を動かす演出は付けない
+const $ptr = document.getElementById("ptr");
+const ptrShow = (text, ready) => { $ptr.textContent = text; $ptr.classList.toggle("ready", !!ready); $ptr.hidden = false; };
+const ptrHide = () => { $ptr.hidden = true; };
+let ptrBusy = false;
+async function pullRefresh(){
+  if (ptrBusy) return; ptrBusy = true; ptrShow("確認中…");
+  try {
+    clearTimeout(flushT); await flush().catch(()=>{});
+    if (S.updateReady){ location.reload(); return; }
+    const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration().catch(()=>null) : null;
+    if (!reg){ location.reload(); return; }
+    try { await Promise.race([reg.update(), new Promise((_,ng) => setTimeout(() => ng(new Error("timeout")), 10000))]); }   // 電波が弱いときに待ち続けない
+    catch(e){ ptrHide(); toast("新しい版を確認できませんでした。電波のよい場所でもう一度お試しください。"); return; }
+    if (!(reg.installing || reg.waiting)){ ptrHide(); toast("最新の版です"); return; }
+    ptrShow("新しい版に切り替えています…");
+    await new Promise(res => { const t = setTimeout(res, 8000);
+      navigator.serviceWorker.addEventListener("controllerchange", () => { clearTimeout(t); res(); }, {once:true}); });
+    location.reload();
+  } finally { ptrBusy = false; }
+}
+(() => {
+  const TH = 80;   // これ以上引っ張って離すと更新
+  let sx=0, sy=0, dy=0, state="idle";   // idle / wait / pull
+  document.addEventListener("touchstart", e => {
+    const t = e.touches[0];
+    state = (e.touches.length===1 && window.scrollY<=0 && !ptrBusy && !S.pick
+             && !e.target.closest("input,select,textarea,.sheet,.scrim,.rulebox,.tabs,.toast,.chips")) ? "wait" : "idle";
+    sx = t.clientX; sy = t.clientY; dy = 0;
+  }, {passive:true});
+  document.addEventListener("touchmove", e => {
+    if (state==="idle") return;
+    const t = e.touches[0], dx = t.clientX - sx; dy = t.clientY - sy;
+    if (state==="wait"){
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) { state = "idle"; return; }   // 横の動き（月のスワイプ）はこちらでは扱わない
+      if (dy < -4 || window.scrollY > 0) { state = "idle"; return; }
+      if (dy > 12 && dy > Math.abs(dx)*1.5) state = "pull"; else return;
+    }
+    if (dy >= TH) ptrShow("↻ 離すと更新", true); else ptrShow("↓ 引っ張って更新");
+  }, {passive:true});
+  const end = cancel => { const was = state; state = "idle";
+    if (was!=="pull") return;
+    if (!cancel && dy >= TH) pullRefresh(); else ptrHide(); };
+  document.addEventListener("touchend", () => end(false), {passive:true});
+  document.addEventListener("touchcancel", () => end(true), {passive:true});
+})();
 })();
 </script>
 </body>
