@@ -201,7 +201,7 @@ input:focus,select:focus{border-color:var(--accent);outline:0;background:var(--s
 .cpick::after{content:"▾";color:var(--muted);font-size:12px}
 .cpick.unset{border-color:var(--warn);color:var(--warn);font-weight:700}
 .row.head{font-size:11px;color:var(--muted);padding-block:4px;border-bottom:1px solid var(--line)}
-.listfoot{display:flex;justify-content:space-between;padding:12px 6px;font-size:13px;color:var(--ink-2)}
+.listfoot{display:flex;justify-content:space-between;align-items:baseline;padding:2px 6px 10px;font-size:13px;color:var(--ink-2)}
 @media all{
   .row{grid-template-columns:minmax(0,1fr) auto 30px;grid-template-areas:"nm a x" "d c c";row-gap:6px}
   .row .nm{grid-area:nm}.row .a{grid-area:a}.row .icon-btn{grid-area:x}
@@ -971,7 +971,9 @@ function listResults(){
   const txns = all ? allTxns().slice().sort((a,b)=>b.date.localeCompare(a.date)) : (S.months[ym]||[]);
   const shown = txns.filter(t => (S.fCat==="all" || t.cat===S.fCat) && (!q || mkey(t.name).includes(q) || mkey(t.memo||"").includes(q)));
   const sum = shown.reduce((s,t)=>s+t.amount,0);
-  return shown.length ? `<div class="rows" role="table">
+  // 件数と合計は一覧の上に出す（利用者の希望）
+  return shown.length ? `<div class="listfoot"><span>${all?"全期間 ":""}${shown.length}件</span><span>合計 <b class="num">${yen(sum)}</b></span></div>
+    <div class="rows" role="table">
       <div class="row head" role="row"><span>日付</span><span>内容</span><span>カテゴリ</span><span style="text-align:right">金額</span><span></span></div>
       ${shown.map(t=>`<div class="row" role="row">
         <span class="d">${all ? t.date.replaceAll("-","/") : t.date.slice(5).replace("-","/")}</span>
@@ -980,8 +982,7 @@ function listResults(){
         <span class="a num${t.amount<0?" neg":""}">${yen(t.amount)}</span>
         <button type="button" class="icon-btn" data-del="${esc(t.id)}" data-ym="${ymOf(t.date)}" aria-label="${esc(t.name)}を削除">×</button>
       </div>`).join("")}
-    </div>
-    <div class="listfoot"><span>${all?"全期間 ":""}${shown.length}件</span><span>合計 <b class="num">${yen(sum)}</b></span></div>`
+    </div>`
     : `<div class="panel empty">${all ? "すべての月で、条件に合う明細はありません。" : txns.length ? `条件に合う明細はありません。${S.qAll?"":"<br>「すべての月から探す」をオンにすると、ほかの月からも探せます。"}` : ymLabel(ym)+"の明細はありません。"}</div>`;
 }
 function renderList(){
