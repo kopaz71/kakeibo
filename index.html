@@ -745,7 +745,7 @@ function render(){
   document.querySelector(".monthnav").hidden = S.tab!=="list";
   document.getElementById("back-ov").hidden = !(S.tab==="list" && S.backOv);   // 概要から来たときだけ、右上に「‹ 概要」
   document.getElementById("banner").innerHTML = (S.updateReady
-    ? `<div class="banner"><span><b>新しい版があります。</b>「更新する」を押すと切り替わります（データはそのままです）。</span><button class="btn sm primary" type="button" id="app-update">更新する</button></div>` : "") + (S.sample
+    ? `<div class="banner"><span><b>新しいバージョンがあります。</b>「更新する」を押すと切り替わります（データはそのままです）。</span><button class="btn sm primary" type="button" id="app-update">更新する</button></div>` : "") + (S.sample
     ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : backupBanner());
   document.getElementById("store").textContent =
     "データはこのスマホの中だけに保存され、外部には送信されません。念のため、月に一度「設定 → バックアップ」で書き出しておいてください。";
@@ -1095,13 +1095,13 @@ function renderSettings(){
     </div>`;
   showAppVersion();
 }
-// 設定の一番下に、スマホに入っている版（sw.js の CACHE の名前）を出す。PCとスマホで同じ版か比べるため
+// 設定の一番下に、スマホに入っているバージョン（sw.js の CACHE の名前）を出す。PCとスマホで同じバージョンか比べるため
 function showAppVersion(){
   try {
     if (!window.caches) return;
     caches.keys().then(ks => {
       const k = ks.filter(x => /^kakeibo-v\d+$/.test(x)).sort((a,b)=>Number(b.slice(9))-Number(a.slice(9)))[0];
-      const el = document.getElementById("appver"); if (el && k) el.textContent = `アプリの版：${k}`;
+      const el = document.getElementById("appver"); if (el && k) el.textContent = `アプリのバージョン：${k}`;
     }).catch(()=>{});
   } catch(e){}
 }
@@ -1287,8 +1287,8 @@ document.addEventListener("submit", e => {
 S.months = makeSample(); S.month = latestMonth();
 render();
 initStorage();
-// 新しい版の確認：sw.js はブラウザのキャッシュを通さずに確認し、開いたとき・裏から戻ったときにも確認する。
-// 新しい版に切り替わったら「新しい版があります｜更新する」を出す（勝手には読み込み直さない）
+// 新しいバージョンの確認：sw.js はブラウザのキャッシュを通さずに確認し、開いたとき・裏から戻ったときにも確認する。
+// 新しいバージョンに切り替わったら「新しいバージョンがあります｜更新する」を出す（勝手には読み込み直さない）
 if ("serviceWorker" in navigator && window.isSecureContext){
   const hadController = !!navigator.serviceWorker.controller;   // 初めて入れたときは知らせない
   navigator.serviceWorker.addEventListener("controllerchange", () => {
@@ -1301,8 +1301,8 @@ if ("serviceWorker" in navigator && window.isSecureContext){
 }
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
 
-// 引っ張って更新：一番上で下に引っ張って離すと、新しい版を確かめる（利用者の希望）。
-// 新しい版があれば保存待ちを書き込んでから読み直す。なければ「最新の版です」と知らせるだけ。
+// 引っ張って更新：一番上で下に引っ張って離すと、新しいバージョンを確かめる（利用者の希望）。
+// 新しいバージョンがあれば保存待ちを書き込んでから読み直す。なければ「最新のバージョンです」と知らせるだけ。
 // 表示は上の小さな案内だけで、画面を動かす演出は付けない
 const $ptr = document.getElementById("ptr");
 const ptrShow = (text, ready) => { $ptr.textContent = text; $ptr.classList.toggle("ready", !!ready); $ptr.hidden = false; };
@@ -1316,9 +1316,9 @@ async function pullRefresh(){
     const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration().catch(()=>null) : null;
     if (!reg){ location.reload(); return; }
     try { await Promise.race([reg.update(), new Promise((_,ng) => setTimeout(() => ng(new Error("timeout")), 10000))]); }   // 電波が弱いときに待ち続けない
-    catch(e){ ptrHide(); toast("新しい版を確認できませんでした。電波のよい場所でもう一度お試しください。"); return; }
-    if (!(reg.installing || reg.waiting)){ ptrHide(); toast("最新の版です"); return; }
-    ptrShow("新しい版に切り替えています…");
+    catch(e){ ptrHide(); toast("新しいバージョンを確認できませんでした。電波のよい場所でもう一度お試しください。"); return; }
+    if (!(reg.installing || reg.waiting)){ ptrHide(); toast("最新のバージョンです"); return; }
+    ptrShow("新しいバージョンに切り替えています…");
     await new Promise(res => { const t = setTimeout(res, 8000);
       navigator.serviceWorker.addEventListener("controllerchange", () => { clearTimeout(t); res(); }, {once:true}); });
     location.reload();
