@@ -82,6 +82,19 @@ input,select,textarea{font-size:16px!important}
 
 /* summary */
 .summary{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 32px;padding:4px 2px 20px}
+.mstrip{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 6px;margin-bottom:12px}
+.mstrip .side{border:0;background:transparent;display:flex;flex-direction:column;gap:1px;padding:8px 6px;border-radius:10px;cursor:pointer;color:var(--ink-2);min-width:0}
+.mstrip .side:active{background:var(--surface-2)}
+.mstrip .prev{align-items:flex-start;text-align:left}
+.mstrip .next{align-items:flex-end;text-align:right}
+.mstrip .side .ml{font-size:12px;white-space:nowrap}
+.mstrip .side .mv{font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.mstrip .side .mv.none{color:var(--muted);font-family:var(--sans);font-size:12px}
+.mstrip .center{text-align:center;min-width:0}
+.mstrip .center .lbl{font-size:12px;color:var(--muted);letter-spacing:.04em}
+.mstrip .center .val{font-family:var(--mono);font-size:clamp(24px,8vw,34px);font-weight:600;line-height:1.15;letter-spacing:-.02em;white-space:nowrap}
+.mstrip .center .val .yen{font-size:.55em;margin-right:2px;color:var(--ink-2)}
+.meta.solo{justify-content:center;padding:0 2px 18px}
 .total .lbl{font-size:12px;color:var(--muted);letter-spacing:.04em}
 .total .val{font-family:var(--mono);font-size:clamp(32px,7vw,44px);font-weight:600;line-height:1.1;letter-spacing:-.02em}
 .total .val .yen{font-size:.55em;margin-right:2px;color:var(--ink-2)}
@@ -530,7 +543,7 @@ function render(){
   document.querySelectorAll("#tabs [data-tab]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab===S.tab)));
   const unc = (S.months[S.month]||[]).filter(t=>t.cat===NONE).length;
   const nb = document.getElementById("nbadge"); nb.hidden = !unc; nb.textContent = unc;
-  document.querySelector(".monthnav").hidden = !(S.tab==="overview"||S.tab==="list");
+  document.querySelector(".monthnav").hidden = S.tab!=="list";
   document.getElementById("banner").innerHTML = S.sample
     ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : "";
   document.getElementById("store").textContent =
@@ -561,12 +574,12 @@ function catTrend(ym){
   const avg = Math.round(vals.reduce((a,b)=>a+b,0)/months.length);
   const cur = sums[sel][ym]||0, prevYm = shiftYm(ym,-1), dv = cur - (sums[sel][prevYm]||0);
   const chips = cats.map(c=>`<button type="button" class="${c===NONE?"none":""}" data-tcat="${esc(c)}" aria-pressed="${c===sel}">${esc(catName(c))}</button>`).join("");
-  return `<section class="panel"><h2>カテゴリ別の推移<small>カテゴリを選んでください</small></h2>
+  return `<section class="panel"><h2>カテゴリ別の推移<small>棒をタップで明細へ</small></h2>
     <div class="chips" id="chips">${chips}</div>
     <div class="ctsum"><span>${Number(ym.slice(5))}月 <b class="num">${yen(cur)}</b></span>
       ${months.includes(prevYm) ? `<span>前月差 <b class="num ${dv>0?"up":dv<0?"down":""}">${dv>0?"▲":dv<0?"▼":"±"}${yen(Math.abs(dv))}</b></span>` : ""}
       <span>${months.length}か月平均 <b class="num">${yen(avg)}</b></span></div>
-    ${trendChart("ctrend", months, vals, ym, avg)}
+    ${trendChart("ctrend", months, vals, ym, avg).replace('id="ctrend"', `id="ctrend" data-cat="${esc(sel)}"`)}
   </section>`;
 }
 
@@ -587,22 +600,24 @@ function renderOverview(){
   const shops = Object.entries(bs).sort((a,b)=>b[1].v-a[1].v).slice(0,6);
   const heat = catTrend(ym);
   const d = total - prev, dp = prev ? Math.round(d/prev*100) : null, prevN = (S.months[shiftYm(ym,-1)]||[]).length;
-  $view.innerHTML = !txns.length ? `<div class="panel empty">${ymLabel(ym)}の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
-    <section class="summary">
-      <div class="total"><div class="lbl">${ymLabel(ym)}の支出</div><div class="val"><span class="yen">¥</span><span id="totv">${total.toLocaleString("ja-JP")}</span></div></div>
-      <div class="meta">
-        <span><b class="num">${txns.length}</b> 件</span>
-        ${prev && prevN<5 ? `<span>前月 <b class="num">${yen(prev)}</b>（${prevN}件のみ）</span>` : ""}
-        ${prev && prevN>=5 ? `<span>前月比 <b class="num delta ${d>0?"up":"down"}">${d>0?"▲":"▼"} ${yen(Math.abs(d))}（${dp>0?"+":""}${dp}%）</b></span>` : ""}
-        ${unc.length ? `<button type="button" class="chip" data-fcat="none">未分類 ${unc.length}件 を確認</button>` : ""}
-      </div>
-    </section>
+  const pym = shiftYm(ym,-1), nym = shiftYm(ym,1), nTot = monthTotal(nym), nN = (S.months[nym]||[]).length;
+  const strip = `<section class="mstrip">
+      <button type="button" class="side prev" data-mnav="-1" aria-label="前の月（${ymLabel(pym)}）"><span class="ml">‹ ${Number(pym.slice(5))}月</span>${prevN?`<span class="mv num">${yen(prev)}</span>`:`<span class="mv none">データなし</span>`}</button>
+      <div class="center"><div class="lbl">${ymLabel(ym)}の支出</div><div class="val"><span class="yen">¥</span><span id="totv">${total.toLocaleString("ja-JP")}</span></div></div>
+      <button type="button" class="side next" data-mnav="1" aria-label="次の月（${ymLabel(nym)}）"><span class="ml">${Number(nym.slice(5))}月 ›</span>${nN?`<span class="mv num">${yen(nTot)}</span>`:`<span class="mv none">データなし</span>`}</button>
+    </section>`;
+  $view.innerHTML = strip + (!txns.length ? `<div class="panel empty">${ymLabel(ym)}の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
+    <div class="meta solo">
+      <span><b class="num">${txns.length}</b> 件</span>
+      ${prev && prevN>=5 ? `<span>前月比 <b class="num delta ${d>0?"up":"down"}">${d>0?"▲":"▼"} ${yen(Math.abs(d))}（${dp>0?"+":""}${dp}%）</b></span>` : ""}
+      ${unc.length ? `<button type="button" class="chip" data-fcat="none">未分類 ${unc.length}件 を確認</button>` : ""}
+    </div>
     <div class="grid g2">
       <section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2><div class="cbars">${cbars}</div></section>
-      <section class="panel"><h2>月別の支出<small>直近12か月・合計</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
+      <section class="panel"><h2>月別の支出<small>棒をタップで明細へ</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
       ${heat}
       <section class="panel"><h2>よく使ったお店<small>金額順</small></h2><ul class="shops">${shops.map(([n,o])=>`<li><span>${esc(n)}<span class="c">${o.n}回</span></span><span class="num">${yen(o.v)}</span></li>`).join("")}</ul></section>
-    </div>`;
+    </div>`);
   const tv = document.getElementById("totv");
   if (tv){ if (nextAnim) countUp(tv, shownTotal, total); shownTotal = total; }
   const ch = document.getElementById("chips"), on = ch && ch.querySelector('[aria-pressed="true"]');
@@ -784,7 +799,10 @@ document.addEventListener("click", async e => {
   const go = t.closest("[data-go]"); if (go){ nextAnim="left"; window.scrollTo(0,0); S.tab = go.dataset.go; render(); return; }
   const fc = t.closest("[data-fcat]"); if (fc){ S.fCat = fc.dataset.fcat; S.q=""; S.tab="list"; nextAnim="left"; window.scrollTo(0,0); render(); return; }
   const tc = t.closest("[data-tcat]"); if (tc){ S.trendCat = tc.dataset.tcat; growCat = true; render(); return; }
-  const col = t.closest(".col[data-ym]"); if (col){ S.month = col.dataset.ym; nextAnim="fade"; render(); flipMonth(); return; }
+  const mn = t.closest("[data-mnav]"); if (mn){ S.month = shiftYm(S.month, +mn.dataset.mnav); nextAnim="month"; render(); return; }
+  const col = t.closest(".col[data-ym]");
+  if (col){ const tr = col.closest(".trend"); S.month = col.dataset.ym; S.fCat = (tr && tr.dataset.cat) || "all"; S.q="";
+    S.tab = "list"; nextAnim = "tab"; window.scrollTo(0,0); render(); return; }
   const del = t.closest("[data-del]"); if (del){ delTxn(S.month, del.dataset.del); return; }
   const cd = t.closest("[data-cdel]");
   if (cd){ const id = cd.dataset.cdel;
