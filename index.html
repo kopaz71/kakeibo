@@ -862,11 +862,27 @@ function catOptions(sel, withAuto){
   return (withAuto?`<option value="auto">自動で分類</option>`:"") + `<option value="${NONE}"${sel===NONE?" selected":""}>未分類</option>` +
     S.cats.map(c=>`<option value="${esc(c.id)}"${c.id===sel?" selected":""}>${esc(c.name)}</option>`).join("");
 }
-function renderList(){
-  const ym = S.month; let txns = S.months[ym]||[];
+// 検索結果の部分だけ。検索中は入力欄を作り直さず、ここだけ差し替える（日本語入力の変換中の文字が確定されないように）
+function listResults(){
+  const ym = S.month, txns = S.months[ym]||[];
   const q = mkey(S.q);
   const shown = txns.filter(t => (S.fCat==="all" || t.cat===S.fCat) && (!q || mkey(t.name).includes(q) || mkey(t.memo||"").includes(q)));
   const sum = shown.reduce((s,t)=>s+t.amount,0);
+  return shown.length ? `<div class="rows" role="table">
+      <div class="row head" role="row"><span>日付</span><span>内容</span><span>カテゴリ</span><span style="text-align:right">金額</span><span></span></div>
+      ${shown.map(t=>`<div class="row" role="row">
+        <span class="d">${t.date.slice(5).replace("-","/")}</span>
+        <span class="nm"><span class="t">${esc(t.name)}</span>${t.src==="manual"?`<span class="tag">手入力</span>`:""}${t.memo?`<div class="memo">${esc(t.memo)}</div>`:""}</span>
+        <span class="cat">${catIcon(t.cat,26)}<button type="button" class="cpick${t.cat===NONE?" unset":""}" data-cpick="${esc(t.id)}" aria-label="${esc(t.name)}のカテゴリ：${esc(catName(t.cat))}（タップで変更）"><span class="t">${esc(catName(t.cat))}</span></button></span>
+        <span class="a num${t.amount<0?" neg":""}">${yen(t.amount)}</span>
+        <button type="button" class="icon-btn" data-del="${esc(t.id)}" aria-label="${esc(t.name)}を削除">×</button>
+      </div>`).join("")}
+    </div>
+    <div class="listfoot"><span>${shown.length}件</span><span>合計 <b class="num">${yen(sum)}</b></span></div>`
+    : `<div class="panel empty">${txns.length ? "条件に合う明細はありません。" : ymLabel(ym)+"の明細はありません。"}</div>`;
+}
+function renderList(){
+  const ym = S.month;
   const today = new Date(); const def = ymOf(today.toISOString())===ym ? today.toISOString().slice(0,10) : ym+"-01";
   $view.innerHTML = `
     <details class="add"><summary>現金などの支出を手入力する</summary>
@@ -883,18 +899,7 @@ function renderList(){
       <input class="grow" type="search" id="q" placeholder="お店・内容で検索" value="${esc(S.q)}">
       <label class="check" title="カテゴリを変えたとき、同じお店を次回から自動で同じカテゴリにします"><input type="checkbox" id="learn" ${S.learn?"checked":""}>変更したお店を覚える</label>
     </div>
-    ${shown.length ? `<div class="rows" role="table">
-      <div class="row head" role="row"><span>日付</span><span>内容</span><span>カテゴリ</span><span style="text-align:right">金額</span><span></span></div>
-      ${shown.map(t=>`<div class="row" role="row">
-        <span class="d">${t.date.slice(5).replace("-","/")}</span>
-        <span class="nm"><span class="t">${esc(t.name)}</span>${t.src==="manual"?`<span class="tag">手入力</span>`:""}${t.memo?`<div class="memo">${esc(t.memo)}</div>`:""}</span>
-        <span class="cat">${catIcon(t.cat,26)}<button type="button" class="cpick${t.cat===NONE?" unset":""}" data-cpick="${esc(t.id)}" aria-label="${esc(t.name)}のカテゴリ：${esc(catName(t.cat))}（タップで変更）"><span class="t">${esc(catName(t.cat))}</span></button></span>
-        <span class="a num${t.amount<0?" neg":""}">${yen(t.amount)}</span>
-        <button type="button" class="icon-btn" data-del="${esc(t.id)}" aria-label="${esc(t.name)}を削除">×</button>
-      </div>`).join("")}
-    </div>
-    <div class="listfoot"><span>${shown.length}件</span><span>合計 <b class="num">${yen(sum)}</b></span></div>`
-    : `<div class="panel empty">${txns.length ? "条件に合う明細はありません。" : ymLabel(ym)+"の明細はありません。"}</div>`}`;
+    <div id="listres">${listResults()}</div>`;
 }
 
 function renderImport(){
@@ -922,10 +927,16 @@ function renderImport(){
   document.getElementById("file").addEventListener("change", e => { const f=[...e.target.files]; if (f.length) importFiles(f); e.target.value=""; });
 }
 
-function renderSettings(){
-  const counts = {}; for (const t of allTxns()) counts[t.cat]=(counts[t.cat]||0)+1;
+function ruleRows(){
   const rq = mkey(S.rq);
   const rules = S.rules.map((r,i)=>({r,i})).filter(({r}) => !rq || mkey(r.kw).includes(rq) || mkey(catName(r.cat)).includes(rq)).reverse();
+  return rules.map(({r,i})=>`<div class="rulerow">
+          <input type="text" data-rkw="${i}" value="${esc(r.kw)}" aria-label="キーワード">
+          <select data-rcat="${i}" aria-label="分類先">${catOptions(r.cat)}</select>
+          <button type="button" class="icon-btn" data-rdel="${i}" aria-label="ルールを削除">×</button></div>`).join("") || `<p class="note">該当するルールはありません。</p>`;
+}
+function renderSettings(){
+  const counts = {}; for (const t of allTxns()) counts[t.cat]=(counts[t.cat]||0)+1;
   $view.innerHTML = `
     <div class="grid g2">
       <section class="panel"><h2>バックアップ</h2>
@@ -950,10 +961,7 @@ function renderSettings(){
         <p class="note" style="margin:0 0 10px">お店の名前にキーワードが含まれていたら、そのカテゴリに分類します。複数当てはまるときは長いキーワードが優先です。半角・全角やカタカナの表記ゆれは気にしなくて大丈夫です。</p>
         <form class="inline" id="ruleform" style="margin-bottom:10px"><input type="text" id="newkw" placeholder="キーワード（例：スーパー）" required><select id="newrc">${S.cats.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("")}</select><button class="btn primary" type="submit">追加</button></form>
         <input type="search" id="rq" placeholder="ルールを検索" value="${esc(S.rq)}" style="width:100%;margin-bottom:8px">
-        <div class="rulebox">${rules.map(({r,i})=>`<div class="rulerow">
-          <input type="text" data-rkw="${i}" value="${esc(r.kw)}" aria-label="キーワード">
-          <select data-rcat="${i}" aria-label="分類先">${catOptions(r.cat)}</select>
-          <button type="button" class="icon-btn" data-rdel="${i}" aria-label="ルールを削除">×</button></div>`).join("") || `<p class="note">該当するルールはありません。</p>`}</div>
+        <div class="rulebox" id="rulebox">${ruleRows()}</div>
         <div class="inline" style="margin-top:12px"><button type="button" class="btn" id="reapply">ルールを明細に再適用</button><span class="note" style="margin:0">手動で選んだカテゴリはそのままです</span></div>
       </section>
       <section class="panel"><h2>データの初期化</h2>
@@ -1094,9 +1102,19 @@ document.addEventListener("change", async e => {
   }
 });
 let qT=null;
+// 検索：入力欄はそのままにして結果だけ差し替える。日本語の変換中（isComposing）は待ち、確定したら反映
+function searchUpdate(el){
+  const box = document.getElementById(el.id==="q" ? "listres" : "rulebox"); if (!box) return;
+  if (el.id==="q"){ S.q = el.value; box.innerHTML = listResults(); } else { S.rq = el.value; box.innerHTML = ruleRows(); }
+}
 document.addEventListener("input", e => {
-  if (e.target.id==="q"){ S.q = e.target.value; clearTimeout(qT); qT=setTimeout(()=>{ const pos=e.target.selectionStart; render(); const el=document.getElementById("q"); el.focus(); try{el.setSelectionRange(pos,pos);}catch(_){} },200); }
-  if (e.target.id==="rq"){ S.rq = e.target.value; clearTimeout(qT); qT=setTimeout(()=>{ render(); const el=document.getElementById("rq"); el.focus(); },200); }
+  const el = e.target; if (el.id!=="q" && el.id!=="rq") return;
+  if (e.isComposing) return;
+  clearTimeout(qT); qT = setTimeout(() => searchUpdate(el), 150);
+});
+document.addEventListener("compositionend", e => {
+  const el = e.target; if (el.id!=="q" && el.id!=="rq") return;
+  clearTimeout(qT); qT = setTimeout(() => searchUpdate(el), 0);
 });
 document.addEventListener("submit", e => {
   e.preventDefault(); const f = e.target;
