@@ -16,8 +16,8 @@
 :root{
   --bg:#f1f3f0; --surface:#ffffff; --surface-2:#ecefeb; --ink:#17201b; --ink-2:#4a5550; --muted:#78837d;
   --line:#dbe1dc; --accent:#1c6a55; --accent-hover:#155443; --accent-soft:#d9ece5; --accent-ink:#ffffff;
-  --bar:#2d7a65; --bar-dim:#bcd5cc; --grid:#e4e8e4;
-  --warn:#9a5208; --warn-soft:#fbeedc; --danger:#b3261e; --danger-soft:#f9e1de; --good:#1d6f36;
+  --bar:#2d7a65; --bar-dim:#86b8a6; --grid:#e4e8e4;
+  --warn:#9a5208; --warn-soft:#fbeedc; --danger:#b3261e; --danger-soft:#f9e1de; --danger-dim:#e39a92; --good:#1d6f36;
   --shadow:0 1px 2px rgba(20,32,27,.04),0 6px 20px rgba(20,32,27,.06);
   --hair:rgba(20,32,27,.1); --radius:18px; --radius-sm:12px;
   --tabbar:color-mix(in srgb, var(--surface) 78%, transparent); --scrim:rgba(10,16,13,.42); --budget:#c26a00;
@@ -30,8 +30,8 @@
     color-scheme:dark;
     --bg:#0d110f; --surface:#171d1a; --surface-2:#212925; --ink:#e6ebe8; --ink-2:#b2bcb6; --muted:#84908a;
     --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
-    --bar:#4fb192; --bar-dim:#2c4a40; --grid:#232b27;
-    --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --good:#6fd08c;
+    --bar:#4fb192; --bar-dim:#3f6f5f; --grid:#232b27;
+    --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --danger-dim:#7a3833; --good:#6fd08c;
     --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --budget:#f0a750; --pig:#f0a3b8; --pig-ink:#4a1626;
   }
 }
@@ -39,8 +39,8 @@
   color-scheme:dark;
   --bg:#0d110f; --surface:#171d1a; --surface-2:#212925; --ink:#e6ebe8; --ink-2:#b2bcb6; --muted:#84908a;
   --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
-  --bar:#4fb192; --bar-dim:#2c4a40; --grid:#232b27;
-  --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --good:#6fd08c;
+  --bar:#4fb192; --bar-dim:#3f6f5f; --grid:#232b27;
+  --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --danger-dim:#7a3833; --good:#6fd08c;
   --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --budget:#f0a750; --pig:#f0a3b8; --pig-ink:#4a1626;
 }
 *{box-sizing:border-box}
@@ -139,7 +139,7 @@ input,select,textarea{font-size:16px!important}
 .cbar.over .v small.bs{color:var(--danger)}
 .catmore{display:block;width:100%;margin-top:4px;border:0;background:transparent;color:var(--accent);font-weight:700;font-size:13px;padding:8px;border-radius:10px;cursor:pointer}
 .catmore:hover{background:var(--surface-2)}
-.backbtn{display:inline-flex;align-items:center;gap:2px;border:0;background:transparent;color:var(--accent);font-weight:700;font-size:15px;padding:6px 2px;margin:-4px 0 8px;cursor:pointer}
+.backbtn{display:inline-flex;align-items:center;gap:2px;border:0;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:14px;min-height:34px;padding:4px 14px 4px 10px;border-radius:999px;margin-left:auto;cursor:pointer}
 .brow{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,12em);gap:8px;align-items:center;padding:5px 0;border-top:1px solid var(--line)}
 .brow:first-child{border-top:0}
 .brow .n{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -299,11 +299,13 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
 .ctsum{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--ink-2);margin:2px 0 16px}
 .ctsum b{color:var(--ink);font-weight:600}
 .ctsum .up{color:var(--danger)} .ctsum .down{color:var(--good)}
-.col .bgt{position:absolute;left:6%;right:6%;border-top:2px solid var(--budget);pointer-events:none;z-index:1}
-.col.over .b{background:var(--danger-soft)}
+.bline{position:absolute;left:42px;right:0;top:0;bottom:22px;width:calc(100% - 42px);height:calc(100% - 22px);overflow:visible;pointer-events:none;z-index:2}
+.bline polyline{fill:none;stroke:var(--budget);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.col .bdot{position:absolute;left:50%;width:9px;height:9px;margin:0 0 -4.5px -4.5px;border-radius:50%;background:var(--budget);border:2px solid var(--surface);pointer-events:none;z-index:2}
+.col.over .b{background:var(--danger-dim)}
 .col.over.cur .b{background:var(--danger)}
 .tlegend{display:flex;justify-content:flex-end;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
-.tlegend .lb::before{content:"";display:inline-block;width:14px;border-top:2px solid var(--budget);vertical-align:middle;margin-right:5px}
+.tlegend .lb::before{content:"";display:inline-block;width:16px;height:7px;vertical-align:middle;margin-right:5px;background:radial-gradient(circle,var(--budget) 0 3px,transparent 3.5px) center/7px 7px no-repeat,linear-gradient(var(--budget),var(--budget)) center/100% 2px no-repeat}
 .tlegend .la::before{content:"";display:inline-block;width:14px;border-top:1.5px dashed var(--ink-2);vertical-align:middle;margin-right:5px;opacity:.7}
 .trend .avg{position:absolute;left:42px;right:0;border-top:1.5px dashed var(--ink-2);z-index:2;pointer-events:none;opacity:.7}
 .trend .avg span{position:absolute;right:0;top:-18px;font-size:10px;color:var(--ink-2);background:var(--surface);padding:0 4px;border-radius:3px;font-family:var(--mono)}
@@ -322,6 +324,7 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
 <div class="wrap">
   <header class="top">
     <div class="brand"><svg class="pig" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="7" class="bg"/><rect x="8" y="6" width="15" height="20" rx="1.6" class="pg"/><rect x="8" y="6" width="2.6" height="20" class="sp"/><rect x="12.5" y="10" width="6" height="1.3" rx=".6" class="ln"/><rect x="12.5" y="14" width="6" height="1.3" rx=".6" class="ln"/><rect x="12.5" y="18" width="6" height="1.3" rx=".6" class="ln"/><path d="M14 22.5 24.5 12l2.6 2.6-10.5 10.5-3.4.8z" class="pc"/></svg><h1>カード明細家計簿</h1></div>
+    <button type="button" class="backbtn" id="back-ov" hidden>‹ 概要</button>
     <div class="monthnav" role="group" aria-label="表示する月">
       <button id="prev" type="button" aria-label="前の月">‹</button>
       <div class="m"><span id="mlabel"></span><span class="dd" aria-hidden="true">▾</span><select class="mpick" id="mhead" aria-label="月を選ぶ"></select></div>
@@ -737,6 +740,7 @@ function render(){
   const unc = (S.months[S.month]||[]).filter(t=>t.cat===NONE).length;
   const nb = document.getElementById("nbadge"); nb.hidden = !unc; nb.textContent = unc;
   document.querySelector(".monthnav").hidden = S.tab!=="list";
+  document.getElementById("back-ov").hidden = !(S.tab==="list" && S.backOv);   // 概要から来たときだけ、右上に「‹ 概要」
   document.getElementById("banner").innerHTML = (S.updateReady
     ? `<div class="banner"><span><b>新しい版があります。</b>「更新する」を押すと切り替わります（データはそのままです）。</span><button class="btn sm primary" type="button" id="app-update">更新する</button></div>` : "") + (S.sample
     ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : backupBanner());
@@ -749,16 +753,23 @@ function render(){
   renderSheet();
 }
 
-// budgets：月ごとの予算（無い月は null）。あれば各棒に予算の高さの線（.bgt）を引き、超えた月の棒を赤くする
+// budgets：月ごとの予算（無い月は null）。あれば予算の折れ線（.bline。予算のない月で切れる）と各月の点（.bdot）を描き、超えた月の棒を赤くする
 function trendChart(id, months, vals, cur, avg, budgets){
   const bs = budgets || [];
   const mx = niceMax(Math.max(...vals, avg||0, ...bs.map(b=>b||0), 1));
   const grid = [0,.5,1].map(f=>`<div class="gl${f===0?" base":""}" style="bottom:calc(22px + ${f} * (100% - 22px))"><span>${f? short(mx*f):"0"}</span></div>`).join("");
   const cols = months.map((m,i)=>{ const b = bs[i]>0 ? bs[i] : null, over = b!==null && vals[i]>b;
-    return `<button type="button" class="col${m===cur?" cur":""}${over?" over":""}" data-ym="${m}" data-v="${vals[i]}"${b!==null?` data-b="${b}"`:""} aria-label="${ymLabel(m)} ${yen(vals[i])}${b!==null?`、予算 ${yen(b)}`:""}"><div class="b" style="height:${Math.max(0,vals[i])/mx*100}%;--i:${i}"></div>${b!==null?`<i class="bgt" style="bottom:${b/mx*100}%"></i>`:""}<span class="x">${Number(m.slice(5))}${months.length>8?"":"月"}</span></button>`; }).join("");
+    return `<button type="button" class="col${m===cur?" cur":""}${over?" over":""}" data-ym="${m}" data-v="${vals[i]}"${b!==null?` data-b="${b}"`:""} aria-label="${ymLabel(m)} ${yen(vals[i])}${b!==null?`、予算 ${yen(b)}`:""}"><div class="b" style="height:${Math.max(0,vals[i])/mx*100}%;--i:${i}"></div>${b!==null?`<i class="bdot" style="bottom:${b/mx*100}%"></i>`:""}<span class="x">${Number(m.slice(5))}${months.length>8?"":"月"}</span></button>`; }).join("");
   const av = avg ? `<div class="avg" style="bottom:calc(22px + ${avg/mx} * (100% - 22px))"><span>平均 ${short(avg)}</span></div>` : "";
+  // 折れ線：列の中央を結ぶ。予算のない月で線を切る（線は SVG を横に伸ばすので、太さは vector-effect で固定）
+  const segs = []; let seg = [];
+  months.forEach((m,i) => { const b = bs[i]>0 ? bs[i] : null;
+    if (b===null){ if (seg.length) segs.push(seg); seg = []; return; }
+    seg.push(`${((i+.5)/months.length*100).toFixed(2)},${(100 - b/mx*100).toFixed(2)}`); });
+  if (seg.length) segs.push(seg);
+  const bl = segs.some(g=>g.length>1) ? `<svg class="bline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${segs.filter(g=>g.length>1).map(g=>`<polyline points="${g.join(" ")}"/>`).join("")}</svg>` : "";
   const lg = bs.some(b=>b>0) ? `<div class="tlegend" aria-hidden="true"><span class="lb">予算</span>${avg?`<span class="la">平均</span>`:""}</div>` : "";
-  return `<div class="trend" id="${id}">${grid}${av}<div class="cols">${cols}</div></div>${lg}`;
+  return `<div class="trend" id="${id}">${grid}${av}<div class="cols">${cols}</div>${bl}</div>${lg}`;
 }
 function catDonut(cats, total){
   const pos = cats.filter(([,v])=>v>0), sum = pos.reduce((s,[,v])=>s+v,0);
@@ -937,7 +948,7 @@ function showTip(tr, c){
   const v = +c.dataset.v, bg = c.dataset.b ? +c.dataset.b : null;
   const tip = document.createElement("div"); tip.className="tip";
   tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(v)}` + (bg!==null ? `\n予算 ${yen(bg)}` + (v>bg ? `・▲${yen(v-bg)}` : `・残り ${yen(bg-v)}`) : "");
-  const line = c.querySelector(".bgt"), top = Math.min(b.top, line ? line.getBoundingClientRect().top : Infinity);
+  const line = c.querySelector(".bdot"), top = Math.min(b.top, line ? line.getBoundingClientRect().top : Infinity);
   tip.style.top = (top - tb.top - 6)+"px";   // 棒の先端（予算の線が上ならその線）の上に出す。背の高い棒では見出しにかぶってもよい
   tr.appendChild(tip);
   const w = tip.offsetWidth; let x = r.left - tb.left + r.width/2; x = Math.min(Math.max(x, w/2), tb.width - w/2);
@@ -974,7 +985,7 @@ function listResults(){
 function renderList(){
   const ym = S.month;
   const today = new Date(); const def = ymOf(today.toISOString())===ym ? today.toISOString().slice(0,10) : ym+"-01";
-  $view.innerHTML = `${S.backOv ? `<button type="button" class="backbtn" id="back-ov">‹ 概要に戻る</button>` : ""}
+  $view.innerHTML = `
     <details class="add"><summary>現金などの支出を手入力する</summary>
       <form class="addform" id="addform">
         <label>日付<input type="date" id="add-date" value="${def}" required></label>
