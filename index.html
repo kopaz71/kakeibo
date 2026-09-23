@@ -20,7 +20,7 @@
   --warn:#9a5208; --warn-soft:#fbeedc; --danger:#b3261e; --danger-soft:#f9e1de; --good:#1d6f36;
   --shadow:0 1px 2px rgba(20,32,27,.04),0 6px 20px rgba(20,32,27,.06);
   --hair:rgba(20,32,27,.1); --radius:18px; --radius-sm:12px;
-  --tabbar:color-mix(in srgb, var(--surface) 78%, transparent);
+  --tabbar:color-mix(in srgb, var(--surface) 78%, transparent); --scrim:rgba(10,16,13,.42);
   --pig:#e98ea6; --pig-ink:#6b2438;
   --sans:system-ui,-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP",sans-serif;
   --mono:ui-monospace,"SF Mono","SFMono-Regular","Roboto Mono",Menlo,monospace;
@@ -32,7 +32,7 @@
     --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
     --bar:#4fb192; --bar-dim:#2c4a40; --grid:#232b27;
     --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --good:#6fd08c;
-    --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --pig:#f0a3b8; --pig-ink:#4a1626;
+    --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --pig:#f0a3b8; --pig-ink:#4a1626;
   }
 }
 :root[data-theme="dark"]{
@@ -41,7 +41,7 @@
   --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
   --bar:#4fb192; --bar-dim:#2c4a40; --grid:#232b27;
   --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --good:#6fd08c;
-  --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --pig:#f0a3b8; --pig-ink:#4a1626;
+  --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --scrim:rgba(0,0,0,.6); --pig:#f0a3b8; --pig-ink:#4a1626;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -176,8 +176,10 @@ input:focus,select:focus{border-color:var(--accent);outline:0;background:var(--s
 .row .tag{display:inline-block;font-size:10px;padding:0 6px;border-radius:4px;background:var(--surface-2);color:var(--ink-2);margin-left:6px;vertical-align:1px}
 .row .a{text-align:right;font-size:14px}
 .row .a.neg{color:var(--good)}
-.row select{width:100%;min-height:34px;padding:4px 10px;font-size:13px}
-.row select.unset{border-color:var(--warn);color:var(--warn);font-weight:700}
+.cpick{flex:1;min-width:0;display:flex;align-items:center;gap:6px;min-height:38px;padding:4px 12px;border:1px solid transparent;border-radius:10px;background:var(--surface-2);font-size:14px;cursor:pointer;text-align:left}
+.cpick .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cpick::after{content:"▾";color:var(--muted);font-size:12px}
+.cpick.unset{border-color:var(--warn);color:var(--warn);font-weight:700}
 .row.head{font-size:11px;color:var(--muted);padding-block:4px;border-bottom:1px solid var(--line)}
 .listfoot{display:flex;justify-content:space-between;padding:12px 6px;font-size:13px;color:var(--ink-2)}
 @media all{
@@ -226,7 +228,9 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
 .confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;background:var(--danger-soft);border-radius:var(--radius-sm);margin-top:10px;font-size:13px}
 .store{font-size:12px;color:var(--muted);margin-top:28px;text-align:center}
 
-.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-size:13px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);z-index:10;max-width:calc(100% - 32px)}
+.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-size:13px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);z-index:10;width:max-content;max-width:calc(100% - 32px)}
+.toast span{min-width:0}
+.toast button{flex:none;white-space:nowrap}
 .toast button{border:0;background:transparent;color:var(--accent-soft);font-weight:700;cursor:pointer;text-decoration:underline}
 @media (prefers-reduced-motion:no-preference){.toast{animation:rise .2s ease-out}@keyframes rise{from{transform:translate(-50%,8px);opacity:0}}}
 
@@ -241,7 +245,24 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
 .cbar .n{display:flex;align-items:center;gap:8px;min-width:0}
 .cbar .n b{font-weight:400;overflow:hidden;text-overflow:ellipsis}
 .row .cat{display:flex;align-items:center;gap:8px;min-width:0}
-.row .cat select{flex:1;min-width:0}
+.row .cat .cpick{flex:1}
+/* カテゴリを選ぶシート（動きは付けない） */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:20}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:640px;margin:0 auto;background:var(--surface);border-radius:22px 22px 0 0;box-shadow:0 -6px 28px rgba(0,0,0,.18);max-height:80vh;overflow-y:auto;overscroll-behavior:contain;padding:18px max(16px, env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
+.sheet .sh-h{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:14px}
+.sheet .sh-h b{font-size:15px;min-width:0;overflow-wrap:anywhere}
+.sheet .sh-h span{font-size:12px;color:var(--muted);white-space:nowrap}
+.sheet .sh-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sheet .sh-g button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:68px;min-width:0;padding:6px 4px;border:2px solid transparent;border-radius:14px;background:var(--surface-2);font-size:13px;cursor:pointer}
+.sheet .sh-g button .t{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sheet .sh-g button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);font-weight:700}
+.sheet .sh-g button.none{color:var(--warn)}
+.sheet .sh-x{width:100%;margin-top:14px}
+/* 月・年のプルダウン（表示の上に透明なselectを重ねる） */
+.mpick{position:absolute;inset:0;width:100%;height:100%;min-height:0;opacity:0;cursor:pointer;border:0;padding:0;-webkit-appearance:none;appearance:none}
+.mstrip .center{position:relative}
+.monthnav .m{position:relative}
+.dd{font-size:.8em;color:var(--muted);margin-left:3px}
 .iconbtn{border:0;background:transparent;padding:2px;border-radius:50%;cursor:pointer}
 .iconbtn .ci{--s:34px}
 .picker{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;padding:12px;background:var(--surface-2);border-radius:14px;margin-top:4px}
@@ -277,7 +298,7 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
     <div class="brand"><svg class="pig" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="7" class="bg"/><rect x="8" y="6" width="15" height="20" rx="1.6" class="pg"/><rect x="8" y="6" width="2.6" height="20" class="sp"/><rect x="12.5" y="10" width="6" height="1.3" rx=".6" class="ln"/><rect x="12.5" y="14" width="6" height="1.3" rx=".6" class="ln"/><rect x="12.5" y="18" width="6" height="1.3" rx=".6" class="ln"/><path d="M14 22.5 24.5 12l2.6 2.6-10.5 10.5-3.4.8z" class="pc"/></svg><h1>カード明細家計簿</h1></div>
     <div class="monthnav" role="group" aria-label="表示する月">
       <button id="prev" type="button" aria-label="前の月">‹</button>
-      <div class="m" id="mlabel"></div>
+      <div class="m"><span id="mlabel"></span><span class="dd" aria-hidden="true">▾</span><select class="mpick" id="mhead" aria-label="月を選ぶ"></select></div>
       <button id="next" type="button" aria-label="次の月">›</button>
     </div>
   </header>
@@ -292,6 +313,7 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
   <p class="store" id="store"></p>
 </div>
 <div id="toast-host"></div>
+<div id="sheet-host"></div>
 
 <script>
 (() => {
@@ -569,20 +591,43 @@ async function importFiles(files){
 }
 
 /* ---------- mutations ---------- */
+/* ---------- カテゴリを選ぶシート ---------- */
+function renderSheet(focus){
+  const host = document.getElementById("sheet-host");
+  const t = S.pick && S.tab==="list" ? (S.months[S.pick.ym]||[]).find(x=>x.id===S.pick.id) : null;
+  if (!t){ S.pick = null; host.innerHTML = ""; return; }
+  const ids = [...S.cats.map(c=>c.id), NONE];   // 未分類は誤って選ばないよう最後に
+  host.innerHTML = `<div class="scrim" data-sclose></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="カテゴリを選ぶ">
+      <div class="sh-h"><b>${esc(t.name)}</b><span>${t.date.slice(5).replace("-","/")}　<span class="num">${yen(t.amount)}</span></span></div>
+      <div class="sh-g">${ids.map(c=>`<button type="button" class="${c===NONE?"none":""}" data-cset="${esc(c)}" aria-pressed="${c===t.cat}">${catIcon(c,30)}<span class="t">${esc(catName(c))}</span></button>`).join("")}</div>
+      <button type="button" class="btn sh-x" data-sclose>閉じる</button>
+    </div>`;
+  if (focus) host.querySelector('[aria-pressed="true"]')?.focus();
+}
+function closeSheet(){ S.pick = null; renderSheet(); }
 function setCat(ym, id, cat){
   const t = (S.months[ym]||[]).find(x=>x.id===id); if (!t) return;
+  // 元に戻せるように、変える前の状態を控えておく
+  const snap = { rules: S.rules.map(r=>({...r})), rows: [[ym, t, t.cat, t.locked]], learned: false };
   t.cat = cat; t.locked = true; markDirty("m-"+ym);
-  if (S.learn && cat!==NONE){
+  let msg = `「${t.name}」を「${catName(cat)}」にしました`;
+  if (S.learn && cat!==NONE){ snap.learned = true;
     const kw = t.name, k = mkey(kw);
     const ex = S.rules.find(r=>mkey(r.kw)===k);
     if (ex) ex.cat = cat; else S.rules.push({kw, cat});
     markDirty("settings");
     let n = 0;
     for (const [m, arr] of Object.entries(S.months)) for (const x of arr){
-      if (x!==t && !x.locked && mkey(x.name)===k && x.cat!==cat){ x.cat = cat; n++; markDirty("m-"+m); }
+      if (x!==t && !x.locked && mkey(x.name)===k && x.cat!==cat){ snap.rows.push([m, x, x.cat, x.locked]); x.cat = cat; n++; markDirty("m-"+m); }
     }
-    toast(`「${kw}」を今後「${catName(cat)}」に分類します` + (n?`（ほか${n}件も変更）`:""));
+    msg = `「${kw}」を今後「${catName(cat)}」に分類します` + (n?`（ほか${n}件も変更）`:"");
   }
+  toast(msg, "元に戻す", () => {
+    for (const [m, x, c, l] of snap.rows){ x.cat = c; x.locked = l; markDirty("m-"+m); }
+    if (snap.learned){ S.rules = snap.rules; markDirty("settings"); }
+    toast("元に戻しました"); render();
+  });
   render();
 }
 let lastDeleted = null;
@@ -654,6 +699,7 @@ function backupBanner(){
 function render(){
   if (!S.month) S.month = latestMonth() || new Date().toISOString().slice(0,7);
   document.getElementById("mlabel").textContent = ymLabel(S.month);
+  document.getElementById("mhead").innerHTML = monthOptions(S.month);
   document.querySelectorAll("#tabs [data-tab]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab===S.tab)));
   const unc = (S.months[S.month]||[]).filter(t=>t.cat===NONE).length;
   const nb = document.getElementById("nbadge"); nb.hidden = !unc; nb.textContent = unc;
@@ -666,6 +712,7 @@ function render(){
   ({overview:renderOverview, list:renderList, import:renderImport, settings:renderSettings}[S.tab] || renderOverview)();
   if (nextAnim && !reduceMotion()){ void $view.offsetWidth; $view.classList.add("grow"); }
   nextAnim = null;
+  renderSheet();
 }
 
 function trendChart(id, months, vals, cur, avg){
@@ -722,12 +769,21 @@ function shopPanel(txns){
   const shops = Object.entries(bs).sort((a,b)=>b[1].v-a[1].v).slice(0,6);
   return `<section class="panel"><h2>よく使ったお店<small>金額順</small></h2><ul class="shops">${shops.map(([n,o])=>`<li><span>${esc(n)}<span class="c">${o.n}回</span></span><span class="num">${yen(o.v)}</span></li>`).join("")}</ul></section>`;
 }
-function stripHtml(step, label, pLabel, pAria, pVal, pHas, nLabel, nAria, nVal, nHas, total){
+function stripHtml(step, label, pLabel, pAria, pVal, pHas, nLabel, nAria, nVal, nHas, total, opts){
   return `<section class="mstrip">
       <button type="button" class="side prev" data-mnav="${-step}" aria-label="${pAria}"><span class="ml">‹ ${pLabel}</span>${pHas?`<span class="mv num">${yen(pVal)}</span>`:`<span class="mv none">データなし</span>`}</button>
-      <div class="center"><div class="lbl">${label}の支出</div><div class="val"><span class="yen">¥</span><span id="totv">${total.toLocaleString("ja-JP")}</span></div></div>
+      <div class="center"><div class="lbl">${label}の支出<span class="dd" aria-hidden="true">▾</span></div><div class="val"><span class="yen">¥</span><span id="totv">${total.toLocaleString("ja-JP")}</span></div><select class="mpick" aria-label="${step===12?"年":"月"}を選ぶ">${opts}</select></div>
       <button type="button" class="side next" data-mnav="${step}" aria-label="${nAria}"><span class="ml">${nLabel} ›</span>${nHas?`<span class="mv num">${yen(nVal)}</span>`:`<span class="mv none">データなし</span>`}</button>
     </section>`;
+}
+// 月・年のプルダウンの選択肢（明細のある月・年と、今の月・年。新しい順）
+function monthOptions(cur){
+  return [...new Set([...Object.keys(S.months), cur])].sort().reverse()
+    .map(m => `<option value="${m}"${m===cur?" selected":""}>${ymLabel(m)}　${yen(monthTotal(m))}</option>`).join("");
+}
+function yearOptions(cur, yTot){
+  return [...new Set([...Object.keys(S.months).map(m=>Number(m.slice(0,4))), cur])].sort((a,b)=>b-a)
+    .map(y => `<option value="${y}"${y===cur?" selected":""}>${y}年　${yen(yTot(y))}</option>`).join("");
 }
 const segHtml = () => `<div class="seg" role="group" aria-label="集計の単位">${[["month","月"],["year","年"]].map(([k,l])=>`<button type="button" data-ov="${k}" aria-pressed="${S.ov===k}">${l}</button>`).join("")}</div>`;
 const yearMonths = y => Array.from({length:12},(_,i)=>`${y}-${String(i+1).padStart(2,"0")}`);
@@ -742,7 +798,7 @@ function renderYear(){
   // 前年同期比：今年データのある月と同じ月どうしで比べる
   const prevSame = has.reduce((s,m)=>s+monthTotal(shiftYm(m,-12)),0), prevSameHas = has.some(m => (S.months[shiftYm(m,-12)]||[]).length);
   const d = total - prevSame, dp = prevSame ? Math.round(d/prevSame*100) : null;
-  const strip = stripHtml(12, `${y}年`, `${y-1}年`, `前の年（${y-1}年）`, yTot(y-1), yHas(y-1), `${y+1}年`, `次の年（${y+1}年）`, yTot(y+1), yHas(y+1), total);
+  const strip = stripHtml(12, `${y}年`, `${y-1}年`, `前の年（${y-1}年）`, yTot(y-1), yHas(y-1), `${y+1}年`, `次の年（${y+1}年）`, yTot(y+1), yHas(y+1), total, yearOptions(y, yTot));
   $view.innerHTML = segHtml() + strip + (!txns.length ? `<div class="panel empty">${y}年の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
     <div class="meta solo">
       <span><b class="num">${txns.length}</b> 件</span>
@@ -775,7 +831,7 @@ function renderMonth(){
   const heat = catTrend(ym);
   const d = total - prev, dp = prev ? Math.round(d/prev*100) : null, prevN = (S.months[shiftYm(ym,-1)]||[]).length;
   const pym = shiftYm(ym,-1), nym = shiftYm(ym,1), nTot = monthTotal(nym), nN = (S.months[nym]||[]).length;
-  const strip = stripHtml(1, ymLabel(ym), `${Number(pym.slice(5))}月`, `前の月（${ymLabel(pym)}）`, prev, prevN, `${Number(nym.slice(5))}月`, `次の月（${ymLabel(nym)}）`, nTot, nN, total);
+  const strip = stripHtml(1, ymLabel(ym), `${Number(pym.slice(5))}月`, `前の月（${ymLabel(pym)}）`, prev, prevN, `${Number(nym.slice(5))}月`, `次の月（${ymLabel(nym)}）`, nTot, nN, total, monthOptions(ym));
   $view.innerHTML = segHtml() + strip + (!txns.length ? `<div class="panel empty">${ymLabel(ym)}の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
     <div class="meta solo">
       <span><b class="num">${txns.length}</b> 件</span>
@@ -806,11 +862,27 @@ function catOptions(sel, withAuto){
   return (withAuto?`<option value="auto">自動で分類</option>`:"") + `<option value="${NONE}"${sel===NONE?" selected":""}>未分類</option>` +
     S.cats.map(c=>`<option value="${esc(c.id)}"${c.id===sel?" selected":""}>${esc(c.name)}</option>`).join("");
 }
-function renderList(){
-  const ym = S.month; let txns = S.months[ym]||[];
+// 検索結果の部分だけ。検索中は入力欄を作り直さず、ここだけ差し替える（日本語入力の変換中の文字が確定されないように）
+function listResults(){
+  const ym = S.month, txns = S.months[ym]||[];
   const q = mkey(S.q);
   const shown = txns.filter(t => (S.fCat==="all" || t.cat===S.fCat) && (!q || mkey(t.name).includes(q) || mkey(t.memo||"").includes(q)));
   const sum = shown.reduce((s,t)=>s+t.amount,0);
+  return shown.length ? `<div class="rows" role="table">
+      <div class="row head" role="row"><span>日付</span><span>内容</span><span>カテゴリ</span><span style="text-align:right">金額</span><span></span></div>
+      ${shown.map(t=>`<div class="row" role="row">
+        <span class="d">${t.date.slice(5).replace("-","/")}</span>
+        <span class="nm"><span class="t">${esc(t.name)}</span>${t.src==="manual"?`<span class="tag">手入力</span>`:""}${t.memo?`<div class="memo">${esc(t.memo)}</div>`:""}</span>
+        <span class="cat">${catIcon(t.cat,26)}<button type="button" class="cpick${t.cat===NONE?" unset":""}" data-cpick="${esc(t.id)}" aria-label="${esc(t.name)}のカテゴリ：${esc(catName(t.cat))}（タップで変更）"><span class="t">${esc(catName(t.cat))}</span></button></span>
+        <span class="a num${t.amount<0?" neg":""}">${yen(t.amount)}</span>
+        <button type="button" class="icon-btn" data-del="${esc(t.id)}" aria-label="${esc(t.name)}を削除">×</button>
+      </div>`).join("")}
+    </div>
+    <div class="listfoot"><span>${shown.length}件</span><span>合計 <b class="num">${yen(sum)}</b></span></div>`
+    : `<div class="panel empty">${txns.length ? "条件に合う明細はありません。" : ymLabel(ym)+"の明細はありません。"}</div>`;
+}
+function renderList(){
+  const ym = S.month;
   const today = new Date(); const def = ymOf(today.toISOString())===ym ? today.toISOString().slice(0,10) : ym+"-01";
   $view.innerHTML = `
     <details class="add"><summary>現金などの支出を手入力する</summary>
@@ -827,18 +899,7 @@ function renderList(){
       <input class="grow" type="search" id="q" placeholder="お店・内容で検索" value="${esc(S.q)}">
       <label class="check" title="カテゴリを変えたとき、同じお店を次回から自動で同じカテゴリにします"><input type="checkbox" id="learn" ${S.learn?"checked":""}>変更したお店を覚える</label>
     </div>
-    ${shown.length ? `<div class="rows" role="table">
-      <div class="row head" role="row"><span>日付</span><span>内容</span><span>カテゴリ</span><span style="text-align:right">金額</span><span></span></div>
-      ${shown.map(t=>`<div class="row" role="row">
-        <span class="d">${t.date.slice(5).replace("-","/")}</span>
-        <span class="nm"><span class="t">${esc(t.name)}</span>${t.src==="manual"?`<span class="tag">手入力</span>`:""}${t.memo?`<div class="memo">${esc(t.memo)}</div>`:""}</span>
-        <span class="cat">${catIcon(t.cat,26)}<select class="csel${t.cat===NONE?" unset":""}" data-id="${esc(t.id)}" aria-label="${esc(t.name)}のカテゴリ">${catOptions(t.cat)}</select></span>
-        <span class="a num${t.amount<0?" neg":""}">${yen(t.amount)}</span>
-        <button type="button" class="icon-btn" data-del="${esc(t.id)}" aria-label="${esc(t.name)}を削除">×</button>
-      </div>`).join("")}
-    </div>
-    <div class="listfoot"><span>${shown.length}件</span><span>合計 <b class="num">${yen(sum)}</b></span></div>`
-    : `<div class="panel empty">${txns.length ? "条件に合う明細はありません。" : ymLabel(ym)+"の明細はありません。"}</div>`}`;
+    <div id="listres">${listResults()}</div>`;
 }
 
 function renderImport(){
@@ -866,10 +927,16 @@ function renderImport(){
   document.getElementById("file").addEventListener("change", e => { const f=[...e.target.files]; if (f.length) importFiles(f); e.target.value=""; });
 }
 
-function renderSettings(){
-  const counts = {}; for (const t of allTxns()) counts[t.cat]=(counts[t.cat]||0)+1;
+function ruleRows(){
   const rq = mkey(S.rq);
   const rules = S.rules.map((r,i)=>({r,i})).filter(({r}) => !rq || mkey(r.kw).includes(rq) || mkey(catName(r.cat)).includes(rq)).reverse();
+  return rules.map(({r,i})=>`<div class="rulerow">
+          <input type="text" data-rkw="${i}" value="${esc(r.kw)}" aria-label="キーワード">
+          <select data-rcat="${i}" aria-label="分類先">${catOptions(r.cat)}</select>
+          <button type="button" class="icon-btn" data-rdel="${i}" aria-label="ルールを削除">×</button></div>`).join("") || `<p class="note">該当するルールはありません。</p>`;
+}
+function renderSettings(){
+  const counts = {}; for (const t of allTxns()) counts[t.cat]=(counts[t.cat]||0)+1;
   $view.innerHTML = `
     <div class="grid g2">
       <section class="panel"><h2>バックアップ</h2>
@@ -894,10 +961,7 @@ function renderSettings(){
         <p class="note" style="margin:0 0 10px">お店の名前にキーワードが含まれていたら、そのカテゴリに分類します。複数当てはまるときは長いキーワードが優先です。半角・全角やカタカナの表記ゆれは気にしなくて大丈夫です。</p>
         <form class="inline" id="ruleform" style="margin-bottom:10px"><input type="text" id="newkw" placeholder="キーワード（例：スーパー）" required><select id="newrc">${S.cats.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("")}</select><button class="btn primary" type="submit">追加</button></form>
         <input type="search" id="rq" placeholder="ルールを検索" value="${esc(S.rq)}" style="width:100%;margin-bottom:8px">
-        <div class="rulebox">${rules.map(({r,i})=>`<div class="rulerow">
-          <input type="text" data-rkw="${i}" value="${esc(r.kw)}" aria-label="キーワード">
-          <select data-rcat="${i}" aria-label="分類先">${catOptions(r.cat)}</select>
-          <button type="button" class="icon-btn" data-rdel="${i}" aria-label="ルールを削除">×</button></div>`).join("") || `<p class="note">該当するルールはありません。</p>`}</div>
+        <div class="rulebox" id="rulebox">${ruleRows()}</div>
         <div class="inline" style="margin-top:12px"><button type="button" class="btn" id="reapply">ルールを明細に再適用</button><span class="note" style="margin:0">手動で選んだカテゴリはそのままです</span></div>
       </section>
       <section class="panel"><h2>データの初期化</h2>
@@ -929,7 +993,7 @@ document.getElementById("tabs").addEventListener("click", e => {
   const damp = d => Math.sign(d) * Math.min(Math.abs(d)*0.35, 56);   // 最大56pxまで
   document.addEventListener("touchstart", e => {
     const t = e.touches[0];
-    const ok = e.touches.length===1 && monthTab() && !e.target.closest("input,select,textarea,.chips,.tabs,.toast,.top")
+    const ok = e.touches.length===1 && monthTab() && !e.target.closest("input,select,textarea,.chips,.tabs,.toast,.top,.sheet,.scrim")
                && t.clientX > 24 && t.clientX < innerWidth-24;   // 画面の端はOSの操作に任せる
     state = ok ? "wait" : "idle"; sx=t.clientX; sy=t.clientY; st=Date.now(); dx=0;
   }, {passive:true});
@@ -964,6 +1028,11 @@ document.getElementById("next").onclick = () => { S.month = shiftYm(S.month,1); 
 document.addEventListener("click", async e => {
   const t = e.target;
   document.querySelectorAll(".trend .tip").forEach(x => x.remove());
+  const cp = t.closest("[data-cpick]"); if (cp){ S.pick = {ym:S.month, id:cp.dataset.cpick}; renderSheet(true); return; }
+  const cs = t.closest("[data-cset]");
+  if (cs){ const p = S.pick, cur = (S.months[p?.ym]||[]).find(x=>x.id===p?.id); closeSheet();
+    if (cur && cur.cat!==cs.dataset.cset) setCat(p.ym, p.id, cs.dataset.cset); return; }
+  if (t.closest("[data-sclose]")){ closeSheet(); return; }
   const go = t.closest("[data-go]"); if (go){ nextAnim="left"; window.scrollTo(0,0); S.tab = go.dataset.go; render(); return; }
   const fc = t.closest("[data-fcat]"); if (fc){ S.fCat = fc.dataset.fcat; S.q=""; S.tab="list"; nextAnim="left"; window.scrollTo(0,0); render(); return; }
   const tc = t.closest("[data-tcat]"); if (tc){ S.trendCat = tc.dataset.tcat; growCat = true; render(); return; }
@@ -1016,9 +1085,10 @@ document.addEventListener("click", async e => {
     markDirty("settings"); S.month = latestMonth(); toast("バックアップから復元しました"); render(); return; }
 });
 
+document.addEventListener("keydown", e => { if (e.key==="Escape" && S.pick) closeSheet(); });
 document.addEventListener("change", async e => {
   const t = e.target;
-  if (t.classList.contains("csel")){ setCat(S.month, t.dataset.id, t.value); return; }
+  if (t.classList.contains("mpick")){ const v = t.value; S.month = v.length===4 ? v + S.month.slice(4) : v; nextAnim = "month"; render(); return; }
   if (t.id==="fcat"){ S.fCat = t.value; render(); return; }
   if (t.id==="learn"){ S.learn = t.checked; return; }
   if (t.dataset.cname){ const c = S.cats.find(x=>x.id===t.dataset.cname); const v=t.value.trim(); if (c && v){ c.name=v; markDirty("settings"); } else render(); return; }
@@ -1032,9 +1102,19 @@ document.addEventListener("change", async e => {
   }
 });
 let qT=null;
+// 検索：入力欄はそのままにして結果だけ差し替える。日本語の変換中（isComposing）は待ち、確定したら反映
+function searchUpdate(el){
+  const box = document.getElementById(el.id==="q" ? "listres" : "rulebox"); if (!box) return;
+  if (el.id==="q"){ S.q = el.value; box.innerHTML = listResults(); } else { S.rq = el.value; box.innerHTML = ruleRows(); }
+}
 document.addEventListener("input", e => {
-  if (e.target.id==="q"){ S.q = e.target.value; clearTimeout(qT); qT=setTimeout(()=>{ const pos=e.target.selectionStart; render(); const el=document.getElementById("q"); el.focus(); try{el.setSelectionRange(pos,pos);}catch(_){} },200); }
-  if (e.target.id==="rq"){ S.rq = e.target.value; clearTimeout(qT); qT=setTimeout(()=>{ render(); const el=document.getElementById("rq"); el.focus(); },200); }
+  const el = e.target; if (el.id!=="q" && el.id!=="rq") return;
+  if (e.isComposing) return;
+  clearTimeout(qT); qT = setTimeout(() => searchUpdate(el), 150);
+});
+document.addEventListener("compositionend", e => {
+  const el = e.target; if (el.id!=="q" && el.id!=="rq") return;
+  clearTimeout(qT); qT = setTimeout(() => searchUpdate(el), 0);
 });
 document.addEventListener("submit", e => {
   e.preventDefault(); const f = e.target;
