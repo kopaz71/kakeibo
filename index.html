@@ -14,11 +14,13 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <style>
 :root{
-  --bg:#f3f5f2; --surface:#ffffff; --surface-2:#eaeee9; --ink:#17201b; --ink-2:#4a5550; --muted:#78837d;
+  --bg:#f1f3f0; --surface:#ffffff; --surface-2:#ecefeb; --ink:#17201b; --ink-2:#4a5550; --muted:#78837d;
   --line:#dbe1dc; --accent:#1c6a55; --accent-hover:#155443; --accent-soft:#d9ece5; --accent-ink:#ffffff;
   --bar:#2d7a65; --bar-dim:#bcd5cc; --grid:#e4e8e4;
   --warn:#9a5208; --warn-soft:#fbeedc; --danger:#b3261e; --danger-soft:#f9e1de; --good:#1d6f36;
-  --shadow:0 1px 2px rgba(20,32,27,.06),0 4px 16px rgba(20,32,27,.05);
+  --shadow:0 1px 2px rgba(20,32,27,.04),0 6px 20px rgba(20,32,27,.06);
+  --hair:rgba(20,32,27,.1); --radius:18px; --radius-sm:12px;
+  --tabbar:color-mix(in srgb, var(--surface) 78%, transparent);
   --pig:#e98ea6; --pig-ink:#6b2438;
   --sans:system-ui,-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP",sans-serif;
   --mono:ui-monospace,"SF Mono","SFMono-Regular","Roboto Mono",Menlo,monospace;
@@ -26,20 +28,20 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
-    --bg:#0f1311; --surface:#161b18; --surface-2:#1e2521; --ink:#e6ebe8; --ink-2:#b2bcb6; --muted:#84908a;
+    --bg:#0d110f; --surface:#171d1a; --surface-2:#212925; --ink:#e6ebe8; --ink-2:#b2bcb6; --muted:#84908a;
     --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
     --bar:#4fb192; --bar-dim:#2c4a40; --grid:#232b27;
     --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --good:#6fd08c;
-    --shadow:0 1px 2px rgba(0,0,0,.3); --pig:#f0a3b8; --pig-ink:#4a1626;
+    --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --pig:#f0a3b8; --pig-ink:#4a1626;
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0f1311; --surface:#161b18; --surface-2:#1e2521; --ink:#e6ebe8; --ink-2:#b2bcb6; --muted:#84908a;
+  --bg:#0d110f; --surface:#171d1a; --surface-2:#212925; --ink:#e6ebe8; --ink-2:#b2bcb6; --muted:#84908a;
   --line:#29312d; --accent:#5ec2a2; --accent-hover:#7ad1b5; --accent-soft:#1b3830; --accent-ink:#0b1813;
   --bar:#4fb192; --bar-dim:#2c4a40; --grid:#232b27;
   --warn:#f0a750; --warn-soft:#382916; --danger:#f07167; --danger-soft:#3a1d1a; --good:#6fd08c;
-  --shadow:0 1px 2px rgba(0,0,0,.3); --pig:#f0a3b8; --pig-ink:#4a1626;
+  --shadow:0 1px 2px rgba(0,0,0,.35); --hair:rgba(255,255,255,.08); --pig:#f0a3b8; --pig-ink:#4a1626;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -56,33 +58,35 @@ input,select,textarea{font-size:16px!important}
 /* header */
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:16px}
 .brand{display:flex;align-items:baseline;gap:10px}
-.brand h1{font-size:18px;font-weight:700;letter-spacing:.02em}
+.brand h1{font-size:20px;font-weight:700;letter-spacing:.02em}
 .brand .sub{font-size:12px;color:var(--muted)}
-.monthnav{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
-.monthnav button{border:0;background:transparent;width:34px;height:34px;border-radius:7px;cursor:pointer;font-size:18px;color:var(--ink-2)}
+.monthnav{display:flex;align-items:center;gap:4px;background:var(--surface);border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:3px}
+.monthnav button{border:0;background:transparent;width:36px;height:36px;border-radius:9px;cursor:pointer;font-size:18px;color:var(--ink-2)}
 .monthnav button:hover{background:var(--surface-2)}
 .monthnav .m{min-width:112px;text-align:center;font-weight:700;font-size:15px}
 
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom, 0px)}
-.tabs button{border:0;background:transparent;padding:8px 2px 9px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
-.tabs button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:repeat(4,1fr);background:var(--tabbar);-webkit-backdrop-filter:saturate(180%) blur(18px);backdrop-filter:saturate(180%) blur(18px);border-top:.5px solid var(--hair);padding-bottom:env(safe-area-inset-bottom, 0px)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.tabs{background:var(--surface)}}
+.tabs button{border:0;background:transparent;padding:7px 2px 8px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+.tabs button svg{box-sizing:content-box;width:22px;height:22px;padding:3px 16px;border-radius:999px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabs button[aria-selected="true"]{color:var(--accent);font-weight:700}
-.tabs .badge{position:absolute;top:3px;left:calc(50% + 6px);margin:0!important}
+.tabs button[aria-selected="true"] svg{background:var(--accent-soft)}
+.tabs .badge{position:absolute;top:2px;left:calc(50% + 10px);margin:0!important}
 .tabs .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:5px;border-radius:9px;background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:700;line-height:18px;text-align:center}
 
-.banner{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;background:var(--accent-soft);color:var(--ink);border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:13px}
+.banner{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;background:var(--accent-soft);color:var(--ink);border-radius:14px;padding:12px 14px;margin-bottom:16px;font-size:13px}
 .banner.warn{background:var(--warn-soft)}
 
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
-.panel h2{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.panel{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px}
+.panel h2{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .panel h2 small{font-weight:400;color:var(--muted);font-size:12px}
-.grid{display:grid;gap:16px}
+.grid{display:grid;gap:14px}
 .g2{grid-template-columns:minmax(0,1fr)}
 .grid>*{min-width:0}
 
 /* summary */
 .summary{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 32px;padding:4px 2px 20px}
-.mstrip{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 6px;margin-bottom:12px}
+.mstrip{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:4px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 8px;margin-bottom:14px}
 .mstrip .side{border:0;background:transparent;display:flex;flex-direction:column;gap:1px;padding:8px 6px;border-radius:10px;cursor:pointer;color:var(--ink-2);min-width:0}
 .mstrip .side:active{background:var(--surface-2)}
 .mstrip .prev{align-items:flex-start;text-align:left}
@@ -103,6 +107,11 @@ input,select,textarea{font-size:16px!important}
 .delta.up{color:var(--danger)} .delta.down{color:var(--good)}
 .chip{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:3px 11px;font-size:12px;font-weight:700;cursor:pointer;background:var(--warn-soft);color:var(--warn)}
 .chip:hover{filter:brightness(.97)}
+
+/* 月｜年の切り替え */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--surface-2);border-radius:12px;padding:3px;width:min(100%,220px);margin:0 auto 12px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:5px 0;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
 
 /* category bars */
 .donut{position:relative;width:min(64vw,220px);aspect-ratio:1;margin:4px auto 14px}
@@ -143,22 +152,23 @@ input,select,textarea{font-size:16px!important}
 /* list */
 .toolbar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-bottom:12px}
 .toolbar .grow{flex:1 1 180px}
-input[type=text],input[type=search],input[type=number],input[type=date],select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-height:36px;max-width:100%}
-input:focus,select:focus{border-color:var(--accent)}
+input[type=text],input[type=search],input[type=number],input[type=date],select{background:var(--surface-2);border:1px solid transparent;border-radius:10px;padding:8px 12px;min-height:40px;max-width:100%}
+input:focus,select:focus{border-color:var(--accent);outline:0;background:var(--surface)}
 .check{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);cursor:pointer}
 .check input{accent-color:var(--accent);width:16px;height:16px}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 14px;min-height:36px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:8px 16px;min-height:40px;cursor:pointer;font-weight:500;white-space:nowrap}
 .btn:hover{background:var(--surface-2)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:999px}
 .btn.primary:hover{background:var(--accent-hover)}
 .btn.danger{color:var(--danger)}
 .btn.danger.armed{background:var(--danger);border-color:var(--danger);color:#fff}
-.btn.sm{padding:3px 10px;min-height:30px;font-size:12px}
-.icon-btn{border:0;background:transparent;width:30px;height:30px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:16px;line-height:1}
+.btn.sm{padding:4px 12px;min-height:32px;font-size:12px;border-radius:9px}
+.icon-btn{border:0;background:transparent;width:30px;height:30px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:16px;line-height:1}
 .icon-btn:hover{background:var(--danger-soft);color:var(--danger)}
 
-.rows{border-top:1px solid var(--line)}
-.row{display:grid;grid-template-columns:5.2em minmax(0,1fr) 10em 7.5em 32px;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line)}
+.rows{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:2px 14px}
+.rows>.row:last-child{border-bottom:0}
+.row{display:grid;grid-template-columns:5.2em minmax(0,1fr) 10em 7.5em 32px;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .row .d{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
 .row .nm{min-width:0}
 .row .nm .t{overflow-wrap:anywhere}
@@ -166,10 +176,10 @@ input:focus,select:focus{border-color:var(--accent)}
 .row .tag{display:inline-block;font-size:10px;padding:0 6px;border-radius:4px;background:var(--surface-2);color:var(--ink-2);margin-left:6px;vertical-align:1px}
 .row .a{text-align:right;font-size:14px}
 .row .a.neg{color:var(--good)}
-.row select{width:100%;min-height:32px;padding:4px 8px;font-size:13px}
+.row select{width:100%;min-height:34px;padding:4px 10px;font-size:13px}
 .row select.unset{border-color:var(--warn);color:var(--warn);font-weight:700}
 .row.head{font-size:11px;color:var(--muted);padding-block:4px;border-bottom:1px solid var(--line)}
-.listfoot{display:flex;justify-content:space-between;padding:10px 4px;font-size:13px;color:var(--ink-2)}
+.listfoot{display:flex;justify-content:space-between;padding:12px 6px;font-size:13px;color:var(--ink-2)}
 @media all{
   .row{grid-template-columns:minmax(0,1fr) auto 30px;grid-template-areas:"nm a x" "d c c";row-gap:6px}
   .row .nm{grid-area:nm}.row .a{grid-area:a}.row .icon-btn{grid-area:x}
@@ -184,10 +194,10 @@ details.add{margin-bottom:14px}
 details.add summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--accent);padding:4px 0;list-style:none}
 details.add summary::before{content:"＋ "}
 details.add[open] summary::before{content:"－ "}
-details.add .addform{padding:12px;background:var(--surface-2);border-radius:10px;margin-top:6px}
+details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--shadow);border-radius:var(--radius);margin-top:8px}
 
 /* import */
-.drop{border:2px dashed var(--line);border-radius:14px;padding:36px 20px;text-align:center;background:var(--surface);transition:border-color .15s,background .15s}
+.drop{border:2px dashed var(--line);border-radius:var(--radius);padding:36px 20px;text-align:center;background:var(--surface);transition:border-color .15s,background .15s}
 .drop.over{border-color:var(--accent);background:var(--accent-soft)}
 .drop p{margin:6px 0 14px;color:var(--ink-2)}
 .drop .big{font-size:16px;font-weight:700;color:var(--ink);margin:0}
@@ -207,16 +217,16 @@ details.add .addform{padding:12px;background:var(--surface-2);border-radius:10px
 .setrow .cnt{font-size:12px;color:var(--muted);text-align:right}
 .rulerow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,9.5em) 30px;gap:8px;align-items:center;padding:5px 0;border-top:1px solid var(--line)}
 .rulerow:first-child{border-top:0}
-.rulerow input,.rulerow select{width:100%;min-height:32px;padding:4px 8px}
+.rulerow input,.rulerow select{width:100%;min-height:36px;padding:4px 10px}
 .rulebox{max-height:420px;overflow-y:auto;padding-right:4px}
 .inline{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .inline input[type=text]{flex:1 1 140px}
 .note{font-size:12px;color:var(--muted);margin:8px 0 0}
 .empty{text-align:center;color:var(--muted);padding:36px 12px}
-.confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;background:var(--danger-soft);border-radius:8px;margin-top:10px;font-size:13px}
+.confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;background:var(--danger-soft);border-radius:var(--radius-sm);margin-top:10px;font-size:13px}
 .store{font-size:12px;color:var(--muted);margin-top:28px;text-align:center}
 
-.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);z-index:10;max-width:calc(100% - 32px)}
+.toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-size:13px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);z-index:10;max-width:calc(100% - 32px)}
 .toast button{border:0;background:transparent;color:var(--accent-soft);font-weight:700;cursor:pointer;text-decoration:underline}
 @media (prefers-reduced-motion:no-preference){.toast{animation:rise .2s ease-out}@keyframes rise{from{transform:translate(-50%,8px);opacity:0}}}
 
@@ -234,7 +244,7 @@ details.add .addform{padding:12px;background:var(--surface-2);border-radius:10px
 .row .cat select{flex:1;min-width:0}
 .iconbtn{border:0;background:transparent;padding:2px;border-radius:50%;cursor:pointer}
 .iconbtn .ci{--s:34px}
-.picker{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;padding:12px;background:var(--surface-2);border-radius:10px;margin-top:4px}
+.picker{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;padding:12px;background:var(--surface-2);border-radius:14px;margin-top:4px}
 .picker button{border:2px solid transparent;background:transparent;border-radius:50%;padding:3px;cursor:pointer;justify-self:center}
 .picker button[aria-pressed="true"]{border-color:var(--ink)}
 .picker .ci{--s:34px}
@@ -621,6 +631,26 @@ function countUp(el, from, to){
   el.textContent = fmt(from); requestAnimationFrame(step);
 }
 function flipMonth(){}
+// バックアップのお知らせ（最後に書き出した日を覚えておき、30日たったら概要で知らせる）
+const LS = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
+const dayStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const daysSince = ds => Math.floor((new Date(dayStr(new Date())+"T00:00:00") - new Date(ds+"T00:00:00")) / 864e5);
+S.ov = LS.get("kkb-ov")==="year" ? "year" : "month";   // 概要の「月｜年」
+const navStep = () => S.tab==="overview" && S.ov==="year" ? 12 : 1;
+function saveBackupAt(){ LS.set("kkb-backup-at", dayStr(new Date())); }
+function backupNote(){
+  const at = LS.get("kkb-backup-at"); if (!at) return "まだ書き出していません";
+  const [y,m,d] = at.split("-").map(Number), n = daysSince(at);
+  return `最後に書き出した日：${y}年${m}月${d}日（${n ? n+"日前" : "今日"}）`;
+}
+function backupBanner(){
+  if (store.mode!=="local" || S.sample || S.tab!=="overview") return "";
+  const at = LS.get("kkb-backup-at"), n = at ? daysSince(at) : null;
+  if (n!==null && n<30) return "";
+  const sn = LS.get("kkb-backup-snooze"); if (sn && daysSince(sn)<7) return "";
+  return `<div class="banner warn"><span>${n===null ? "<b>バックアップがまだありません。</b>" : `<b>最後のバックアップから${n}日たちました。</b>`}データはこのスマホの中にしかないので、書き出しておくと安心です。</span>
+    <span class="inline"><button class="btn sm" type="button" id="bk-later">あとで</button><button class="btn sm primary" type="button" data-go="settings">書き出す</button></span></div>`;
+}
 function render(){
   if (!S.month) S.month = latestMonth() || new Date().toISOString().slice(0,7);
   document.getElementById("mlabel").textContent = ymLabel(S.month);
@@ -629,7 +659,7 @@ function render(){
   const nb = document.getElementById("nbadge"); nb.hidden = !unc; nb.textContent = unc;
   document.querySelector(".monthnav").hidden = S.tab!=="list";
   document.getElementById("banner").innerHTML = S.sample
-    ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : "";
+    ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : backupBanner();
   document.getElementById("store").textContent =
     "データはこのスマホの中だけに保存され、外部には送信されません。念のため、月に一度「設定 → バックアップ」で書き出しておいてください。";
   $view.classList.remove("grow");
@@ -641,7 +671,7 @@ function render(){
 function trendChart(id, months, vals, cur, avg){
   const mx = niceMax(Math.max(...vals, avg||0, 1));
   const grid = [0,.5,1].map(f=>`<div class="gl${f===0?" base":""}" style="bottom:calc(22px + ${f} * (100% - 22px))"><span>${f? short(mx*f):"0"}</span></div>`).join("");
-  const cols = months.map((m,i)=>`<button type="button" class="col${m===cur?" cur":""}" data-ym="${m}" data-v="${vals[i]}" aria-label="${ymLabel(m)} ${yen(vals[i])}"><div class="b" style="height:${Math.max(0,vals[i])/mx*100}%;--i:${i}"></div><span class="x">${Number(m.slice(5))}月</span></button>`).join("");
+  const cols = months.map((m,i)=>`<button type="button" class="col${m===cur?" cur":""}" data-ym="${m}" data-v="${vals[i]}" aria-label="${ymLabel(m)} ${yen(vals[i])}"><div class="b" style="height:${Math.max(0,vals[i])/mx*100}%;--i:${i}"></div><span class="x">${Number(m.slice(5))}${months.length>8?"":"月"}</span></button>`).join("");
   const av = avg ? `<div class="avg" style="bottom:calc(22px + ${avg/mx} * (100% - 22px))"><span>平均 ${short(avg)}</span></div>` : "";
   return `<div class="trend" id="${id}">${grid}${av}<div class="cols">${cols}</div></div>`;
 }
@@ -679,54 +709,93 @@ function catTrend(ym){
   </section>`;
 }
 
-function renderOverview(){
-  const ym = S.month, txns = S.months[ym]||[];
-  const total = monthTotal(ym), prev = monthTotal(shiftYm(ym,-1));
-  const unc = txns.filter(t=>t.cat===NONE);
-  // trend
-  const months = Array.from({length:12},(_,i)=>shiftYm(ym,i-11)).filter(m => m>= (Object.keys(S.months).sort()[0]||ym) || m===ym);
-  const vals = months.map(m=>monthTotal(m)); const mx = niceMax(Math.max(...vals,1));
-  // categories
+// カテゴリ別（ドーナツと一覧）とよく使ったお店。月の表示と年の表示で共通
+function catPanel(txns, total){
   const by = {}; for (const t of txns) by[t.cat]=(by[t.cat]||0)+t.amount;
   const cats = Object.entries(by).filter(([,v])=>v!==0).sort((a,b)=>b[1]-a[1]);
   const psum = cats.reduce((s,[,v])=>s+Math.max(0,v),0);
   const cbars = cats.map(([c,v])=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${catIcon(c,22)}<b>${esc(catName(c))}</b></span><span class="v num">${yen(v)}<span>${v>0&&psum?Math.round(v/psum*100)+"%":"—"}</span></span></button>`).join("");
-  // shops
+  return `<section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2>${catDonut(cats, total)}<div class="cbars">${cbars}</div></section>`;
+}
+function shopPanel(txns){
   const bs = {}; for (const t of txns){ const k=t.name; (bs[k] ||= {v:0,n:0}); bs[k].v+=t.amount; bs[k].n++; }
   const shops = Object.entries(bs).sort((a,b)=>b[1].v-a[1].v).slice(0,6);
-  const heat = catTrend(ym);
-  const d = total - prev, dp = prev ? Math.round(d/prev*100) : null, prevN = (S.months[shiftYm(ym,-1)]||[]).length;
-  const pym = shiftYm(ym,-1), nym = shiftYm(ym,1), nTot = monthTotal(nym), nN = (S.months[nym]||[]).length;
-  const strip = `<section class="mstrip">
-      <button type="button" class="side prev" data-mnav="-1" aria-label="前の月（${ymLabel(pym)}）"><span class="ml">‹ ${Number(pym.slice(5))}月</span>${prevN?`<span class="mv num">${yen(prev)}</span>`:`<span class="mv none">データなし</span>`}</button>
-      <div class="center"><div class="lbl">${ymLabel(ym)}の支出</div><div class="val"><span class="yen">¥</span><span id="totv">${total.toLocaleString("ja-JP")}</span></div></div>
-      <button type="button" class="side next" data-mnav="1" aria-label="次の月（${ymLabel(nym)}）"><span class="ml">${Number(nym.slice(5))}月 ›</span>${nN?`<span class="mv num">${yen(nTot)}</span>`:`<span class="mv none">データなし</span>`}</button>
+  return `<section class="panel"><h2>よく使ったお店<small>金額順</small></h2><ul class="shops">${shops.map(([n,o])=>`<li><span>${esc(n)}<span class="c">${o.n}回</span></span><span class="num">${yen(o.v)}</span></li>`).join("")}</ul></section>`;
+}
+function stripHtml(step, label, pLabel, pAria, pVal, pHas, nLabel, nAria, nVal, nHas, total){
+  return `<section class="mstrip">
+      <button type="button" class="side prev" data-mnav="${-step}" aria-label="${pAria}"><span class="ml">‹ ${pLabel}</span>${pHas?`<span class="mv num">${yen(pVal)}</span>`:`<span class="mv none">データなし</span>`}</button>
+      <div class="center"><div class="lbl">${label}の支出</div><div class="val"><span class="yen">¥</span><span id="totv">${total.toLocaleString("ja-JP")}</span></div></div>
+      <button type="button" class="side next" data-mnav="${step}" aria-label="${nAria}"><span class="ml">${nLabel} ›</span>${nHas?`<span class="mv num">${yen(nVal)}</span>`:`<span class="mv none">データなし</span>`}</button>
     </section>`;
-  $view.innerHTML = strip + (!txns.length ? `<div class="panel empty">${ymLabel(ym)}の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
+}
+const segHtml = () => `<div class="seg" role="group" aria-label="集計の単位">${[["month","月"],["year","年"]].map(([k,l])=>`<button type="button" data-ov="${k}" aria-pressed="${S.ov===k}">${l}</button>`).join("")}</div>`;
+const yearMonths = y => Array.from({length:12},(_,i)=>`${y}-${String(i+1).padStart(2,"0")}`);
+
+function renderYear(){
+  const ym = S.month, y = Number(ym.slice(0,4)), yms = yearMonths(y);
+  const txns = yms.flatMap(m => S.months[m]||[]);
+  const vals = yms.map(monthTotal), total = vals.reduce((a,b)=>a+b,0);
+  const has = yms.filter(m => (S.months[m]||[]).length);
+  const avg = has.length ? Math.round(total/has.length) : 0;
+  const yTot = yy => yearMonths(yy).reduce((s,m)=>s+monthTotal(m),0), yHas = yy => yearMonths(yy).some(m => (S.months[m]||[]).length);
+  // 前年同期比：今年データのある月と同じ月どうしで比べる
+  const prevSame = has.reduce((s,m)=>s+monthTotal(shiftYm(m,-12)),0), prevSameHas = has.some(m => (S.months[shiftYm(m,-12)]||[]).length);
+  const d = total - prevSame, dp = prevSame ? Math.round(d/prevSame*100) : null;
+  const strip = stripHtml(12, `${y}年`, `${y-1}年`, `前の年（${y-1}年）`, yTot(y-1), yHas(y-1), `${y+1}年`, `次の年（${y+1}年）`, yTot(y+1), yHas(y+1), total);
+  $view.innerHTML = segHtml() + strip + (!txns.length ? `<div class="panel empty">${y}年の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
     <div class="meta solo">
       <span><b class="num">${txns.length}</b> 件</span>
-      ${prev && prevN>=5 ? `<span>前月比 <b class="num delta ${d>0?"up":"down"}">${d>0?"▲":"▼"} ${yen(Math.abs(d))}（${dp>0?"+":""}${dp}%）</b></span>` : ""}
-      ${unc.length ? `<button type="button" class="chip" data-fcat="none">未分類 ${unc.length}件 を確認</button>` : ""}
+      <span>月平均 <b class="num">${yen(avg)}</b>（${has.length}か月）</span>
+      ${prevSameHas && prevSame ? `<span>前年同期比 <b class="num delta ${d>0?"up":"down"}">${d>0?"▲":"▼"} ${yen(Math.abs(d))}（${dp>0?"+":""}${dp}%）</b></span>` : ""}
     </div>
     <div class="grid g2">
-      <section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2>${catDonut(cats, total)}<div class="cbars">${cbars}</div></section>
-      <section class="panel"><h2>月別の支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
-      ${heat}
-      <section class="panel"><h2>よく使ったお店<small>金額順</small></h2><ul class="shops">${shops.map(([n,o])=>`<li><span>${esc(n)}<span class="c">${o.n}回</span></span><span class="num">${yen(o.v)}</span></li>`).join("")}</ul></section>
+      ${catPanel(txns, total)}
+      <section class="panel"><h2>${y}年の月ごとの支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", yms, vals, ym, avg)}</section>
+      ${shopPanel(txns)}
     </div>`);
+  return total;
+}
+
+function renderOverview(){
+  const total = S.ov==="year" ? renderYear() : renderMonth();
   const tv = document.getElementById("totv");
   if (tv){ if (nextAnim) countUp(tv, shownTotal, total); shownTotal = total; }
   const ch = document.getElementById("chips"), on = ch && ch.querySelector('[aria-pressed="true"]');
   if (on) ch.scrollLeft = on.offsetLeft - ch.offsetLeft - 18;
   if (growCat){ const ct = document.getElementById("ctrend"); if (ct && !reduceMotion()) ct.classList.add("grow"); growCat = false; }
   for (const tr of document.querySelectorAll(".trend")) bindTip(tr);
-  return;
+}
+function renderMonth(){
+  const ym = S.month, txns = S.months[ym]||[];
+  const total = monthTotal(ym), prev = monthTotal(shiftYm(ym,-1));
+  const unc = txns.filter(t=>t.cat===NONE);
+  const months = Array.from({length:12},(_,i)=>shiftYm(ym,i-11)).filter(m => m>= (Object.keys(S.months).sort()[0]||ym) || m===ym);
+  const vals = months.map(m=>monthTotal(m));
+  const heat = catTrend(ym);
+  const d = total - prev, dp = prev ? Math.round(d/prev*100) : null, prevN = (S.months[shiftYm(ym,-1)]||[]).length;
+  const pym = shiftYm(ym,-1), nym = shiftYm(ym,1), nTot = monthTotal(nym), nN = (S.months[nym]||[]).length;
+  const strip = stripHtml(1, ymLabel(ym), `${Number(pym.slice(5))}月`, `前の月（${ymLabel(pym)}）`, prev, prevN, `${Number(nym.slice(5))}月`, `次の月（${ymLabel(nym)}）`, nTot, nN, total);
+  $view.innerHTML = segHtml() + strip + (!txns.length ? `<div class="panel empty">${ymLabel(ym)}の明細はありません。<br><br><button class="btn primary" type="button" data-go="import">CSVを取り込む</button></div>` : `
+    <div class="meta solo">
+      <span><b class="num">${txns.length}</b> 件</span>
+      ${prev && prevN>=5 ? `<span>前月比 <b class="num delta ${d>0?"up":"down"}">${d>0?"▲":"▼"} ${yen(Math.abs(d))}（${dp>0?"+":""}${dp}%）</b></span>` : ""}
+      ${unc.length ? `<button type="button" class="chip" data-fcat="none">未分類 ${unc.length}件 を確認</button>` : ""}
+    </div>
+    <div class="grid g2">
+      ${catPanel(txns, total)}
+      <section class="panel"><h2>月別の支出<small>棒をタップで金額を表示</small></h2>${trendChart("trend", months, vals, ym, 0)}</section>
+      ${heat}
+      ${shopPanel(txns)}
+    </div>`);
+  return total;
 }
 function showTip(tr, c){
   tr.querySelector(".tip")?.remove(); const r = c.getBoundingClientRect(), tb = tr.getBoundingClientRect(), b = c.querySelector(".b").getBoundingClientRect();
   const tip = document.createElement("div"); tip.className="tip"; tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(+c.dataset.v)}`;
   let x = r.left - tb.left + r.width/2; x = Math.min(Math.max(x, 70), tb.width-70);
-  tip.style.left = x+"px"; tip.style.top = (b.top - tb.top - 6)+"px"; tr.appendChild(tip);
+  tip.style.left = x+"px"; tip.style.top = Math.max(b.top - tb.top - 6, 32)+"px";   // 見出しにかぶらないよう、背の高い棒では棒に重ねる
+  tr.appendChild(tip);
 }
 function bindTip(tr){
   tr.addEventListener("pointerover", e => { const c = e.target.closest(".col"); if (c && e.pointerType==="mouse") showTip(tr, c); });
@@ -808,6 +877,7 @@ function renderSettings(){
         <div class="inline"><button type="button" class="btn" id="export">書き出す</button>
           <label class="btn" for="restore">読み込む</label><input type="file" id="restore" accept=".json,application/json" hidden></div>
         ${S.pendingImport ? `<div class="confirm"><span>「${esc(S.pendingImport.name)}」（明細${S.pendingImport.count}件）で置き換えますか？</span><button type="button" class="btn sm danger armed" id="restore-ok">置き換える</button><button type="button" class="btn sm" id="restore-no">やめる</button></div>` : ""}
+        <p class="note">${backupNote()}</p>
         <div id="exportbox"></div>
 </section>
       <section class="panel"><h2>カテゴリ<small>丸をタップでアイコン変更</small></h2>
@@ -880,7 +950,7 @@ document.getElementById("tabs").addEventListener("click", e => {
     const quick = Math.abs(dx)/(Date.now()-st) > 0.5 && Math.abs(dx) > 40;
     if (cancel || (Math.abs(dx) < 80 && !quick)){ setX(0, 180); setTimeout(()=>setX(0,0), 190); return; }   // 元に戻す
     const dir = dx < 0 ? 1 : -1;
-    S.month = shiftYm(S.month, dir); nextAnim = "month"; render();
+    S.month = shiftYm(S.month, dir*navStep()); nextAnim = "month"; render();
     if (reduceMotion()){ setX(0,0); return; }
     setX(dir*28, 0);                                             // 新しい月を進む向きから少しだけ
     requestAnimationFrame(() => requestAnimationFrame(() => { setX(0, 220); setTimeout(()=>setX(0,0), 230); }));
@@ -897,6 +967,7 @@ document.addEventListener("click", async e => {
   const go = t.closest("[data-go]"); if (go){ nextAnim="left"; window.scrollTo(0,0); S.tab = go.dataset.go; render(); return; }
   const fc = t.closest("[data-fcat]"); if (fc){ S.fCat = fc.dataset.fcat; S.q=""; S.tab="list"; nextAnim="left"; window.scrollTo(0,0); render(); return; }
   const tc = t.closest("[data-tcat]"); if (tc){ S.trendCat = tc.dataset.tcat; growCat = true; render(); return; }
+  const ov = t.closest("[data-ov]"); if (ov){ if (S.ov!==ov.dataset.ov){ S.ov = ov.dataset.ov; LS.set("kkb-ov", S.ov); nextAnim = "fade"; render(); } return; }
   const mn = t.closest("[data-mnav]"); if (mn){ S.month = shiftYm(S.month, +mn.dataset.mnav); nextAnim="month"; render(); return; }
   const col = t.closest(".col[data-ym]");
   if (col){ const tr = col.closest(".trend"); if (tr) showTip(tr, col); return; }
@@ -911,6 +982,7 @@ document.addEventListener("click", async e => {
   const is = t.closest("[data-iset]"); if (is){ const c = S.cats.find(x=>x.id===S.iconPick); if (c){ c.icon = is.dataset.iset; markDirty("settings"); } S.iconPick = null; render(); return; }
   const rd = t.closest("[data-rdel]"); if (rd){ S.rules.splice(+rd.dataset.rdel,1); markDirty("settings"); render(); return; }
   if (t.id==="reapply"){ reapply(); return; }
+  if (t.id==="bk-later"){ LS.set("kkb-backup-snooze", dayStr(new Date())); render(); return; }
   if (t.id==="reset"){
     if (S.armed!=="__reset"){ S.armed="__reset"; render(); return; }
     S.armed=null; for (const ym of Object.keys(S.months)) { delete S.months[ym]; markDirty("m-"+ym); }
@@ -920,16 +992,16 @@ document.addEventListener("click", async e => {
     const data = JSON.stringify({app:"kakeibo", v:1, exportedAt:new Date().toISOString(), cats:S.cats, rules:S.rules, months:S.sample?{}:S.months}, null, 1);
     const name = `kakeibo-backup-${new Date().toISOString().slice(0,10)}.json`;
     let dl = null; try { dl = await window.claude?.use?.("downloads"); } catch(err){}
-    if (dl){ try { await dl.save({filename:name, data}); toast("バックアップを保存しました"); } catch(err){ if (err?.code!=="declined") toast("保存できませんでした。もう一度お試しください。"); } }
+    if (dl){ try { await dl.save({filename:name, data}); saveBackupAt(); toast("バックアップを保存しました"); render(); } catch(err){ if (err?.code!=="declined") toast("保存できませんでした。もう一度お試しください。"); } }
     else if (!window.claude) {
       const file = new File([data], name, {type:"application/json"});
       if (navigator.canShare && navigator.canShare({files:[file]})) {
-        try { await navigator.share({files:[file], title:name}); toast("バックアップを書き出しました"); }
+        try { await navigator.share({files:[file], title:name}); saveBackupAt(); toast("バックアップを書き出しました"); render(); }
         catch(err){ if (err && err.name!=="AbortError") toast("書き出せませんでした。もう一度お試しください。"); }
         return;
       }
       const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data],{type:"application/json"})); a.download = name;
-      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000); toast("バックアップを保存しました"); }
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000); saveBackupAt(); toast("バックアップを保存しました"); render(); }
     else { document.getElementById("exportbox").innerHTML = `<p class="note">この表示ではファイル保存ができないため、下の内容をコピーして保存してください。</p><textarea readonly style="width:100%;height:120px;font-family:var(--mono);font-size:11px">${esc(data)}</textarea>`; }
     return; }
   if (t.id==="restore-no"){ S.pendingImport=null; render(); return; }
@@ -938,6 +1010,7 @@ document.addEventListener("click", async e => {
     for (const ym of Object.keys(S.months)) markDirty("m-"+ym);
     S.cats = o.cats; S.rules = o.rules||[]; S.months = o.months||{}; S.sample = !Object.keys(S.months).length;
     if (S.sample) S.months = makeSample();
+    migrateV2();   // 古いバックアップも今のカテゴリ構成に合わせる
     for (const ym of Object.keys(S.months)) markDirty("m-"+ym);
     markDirty("settings"); S.month = latestMonth(); toast("バックアップから復元しました"); render(); return; }
 });
