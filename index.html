@@ -726,8 +726,9 @@ function render(){
   const unc = (S.months[S.month]||[]).filter(t=>t.cat===NONE).length;
   const nb = document.getElementById("nbadge"); nb.hidden = !unc; nb.textContent = unc;
   document.querySelector(".monthnav").hidden = S.tab!=="list";
-  document.getElementById("banner").innerHTML = S.sample
-    ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : backupBanner();
+  document.getElementById("banner").innerHTML = (S.updateReady
+    ? `<div class="banner"><span><b>新しい版があります。</b>「更新する」を押すと切り替わります（データはそのままです）。</span><button class="btn sm primary" type="button" id="app-update">更新する</button></div>` : "") + (S.sample
+    ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : backupBanner());
   document.getElementById("store").textContent =
     "データはこのスマホの中だけに保存され、外部には送信されません。念のため、月に一度「設定 → バックアップ」で書き出しておいてください。";
   $view.classList.remove("grow");
@@ -1042,7 +1043,19 @@ function renderSettings(){
         <p class="note" style="margin:0 0 10px">取り込んだ明細をすべて削除し、カテゴリとルールも最初の状態に戻します。</p>
         <button type="button" class="btn danger${S.armed==="__reset"?" armed":""}" id="reset">${S.armed==="__reset"?"本当にすべて削除する":"すべてのデータを削除"}</button>
       </section>
+      <p class="note" id="appver" style="text-align:center"></p>
     </div>`;
+  showAppVersion();
+}
+// 設定の一番下に、スマホに入っている版（sw.js の CACHE の名前）を出す。PCとスマホで同じ版か比べるため
+function showAppVersion(){
+  try {
+    if (!window.caches) return;
+    caches.keys().then(ks => {
+      const k = ks.filter(x => /^kakeibo-v\d+$/.test(x)).sort((a,b)=>Number(b.slice(9))-Number(a.slice(9)))[0];
+      const el = document.getElementById("appver"); if (el && k) el.textContent = `アプリの版：${k}`;
+    }).catch(()=>{});
+  } catch(e){}
 }
 
 /* ---------- events ---------- */
@@ -1125,6 +1138,7 @@ document.addEventListener("click", async e => {
   const is = t.closest("[data-iset]"); if (is){ const c = S.cats.find(x=>x.id===S.iconPick); if (c){ c.icon = is.dataset.iset; markDirty("settings"); } S.iconPick = null; render(); return; }
   const rd = t.closest("[data-rdel]"); if (rd){ S.rules.splice(+rd.dataset.rdel,1); markDirty("settings"); render(); return; }
   if (t.id==="reapply"){ reapply(); return; }
+  if (t.id==="app-update"){ t.disabled = true; clearTimeout(flushT); flush().finally(() => location.reload()); return; }   // 保存待ちを書き込んでから読み込み直す
   if (t.id==="bk-later"){ LS.set("kkb-backup-snooze", dayStr(new Date())); render(); return; }
   if (t.id==="reset"){
     if (S.armed!=="__reset"){ S.armed="__reset"; render(); return; }
@@ -1216,7 +1230,18 @@ document.addEventListener("submit", e => {
 S.months = makeSample(); S.month = latestMonth();
 render();
 initStorage();
-if ("serviceWorker" in navigator && location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+// 新しい版の確認：sw.js はブラウザのキャッシュを通さずに確認し、開いたとき・裏から戻ったときにも確認する。
+// 新しい版に切り替わったら「新しい版があります｜更新する」を出す（勝手には読み込み直さない）
+if ("serviceWorker" in navigator && window.isSecureContext){
+  const hadController = !!navigator.serviceWorker.controller;   // 初めて入れたときは知らせない
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || S.updateReady) return;
+    S.updateReady = true; render();
+  });
+  navigator.serviceWorker.register("sw.js", {updateViaCache:"none"}).then(reg => {
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState==="visible") reg.update().catch(()=>{}); });
+  }).catch(()=>{});
+}
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
 })();
 </script>
