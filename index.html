@@ -813,7 +813,7 @@ function budgetAlloc(ym){
 function budgetCard(spent, budget, label){
   const left = budget - spent, pct = budget>0 ? Math.min(100, Math.max(0, spent/budget*100)) : 100;
   return `<section class="budget${left<0?" over":""}">
-      <div class="bl"><span>${label} <b class="num">${yen(budget)}</b></span><span>${left>=0 ? `残り <b class="num">${yen(left)}</b>` : `<b class="num">${yen(-left)}</b> オーバー`}</span></div>
+      <div class="bl"><span>${label} <b class="num">${yen(budget)}</b></span><span>${left>=0 ? `残り <b class="num">${yen(left)}</b>` : `<b class="num">▲${yen(-left)}</b>`}</span></div>
       <div class="bbar" role="img" aria-label="予算の${Math.round(spent/budget*100)}%を使いました"><i style="width:${pct}%"></i></div>
     </section>`;
 }
@@ -824,7 +824,7 @@ function catPanel(txns, total, budgets){
   const cats = Object.entries(by).filter(([c,v])=>v!==0 || budgets?.[c]>0).sort((a,b)=>b[1]-a[1]);
   const psum = cats.reduce((s,[,v])=>s+Math.max(0,v),0);
   const bud = (c,v) => { const b = budgets?.[c]; if (!(b>0)) return "";
-    return `<span class="bud${v>b?" over":""}"><span class="bbar"><i style="width:${Math.min(100, Math.max(0, v/b*100))}%"></i></span><span class="num">${v>b ? `${yen(v-b)} オーバー` : `残り ${yen(b-v)}`}<small> / ${yen(b)}</small></span></span>`; };
+    return `<span class="bud${v>b?" over":""}"><span class="bbar"><i style="width:${Math.min(100, Math.max(0, v/b*100))}%"></i></span><span class="num">${v>b ? `▲${yen(v-b)}` : `残り ${yen(b-v)}`}<small> / ${yen(b)}</small></span></span>`; };
   const cbars = cats.map(([c,v])=>`<button type="button" class="cbar${c===NONE?" none":""}" data-fcat="${esc(c)}"><span class="n">${catIcon(c,22)}<b>${esc(catName(c))}</b></span><span class="v num">${yen(v)}<span>${v>0&&psum?Math.round(v/psum*100)+"%":"—"}</span></span>${bud(c,v)}</button>`).join("");
   return `<section class="panel"><h2>カテゴリ別<small>タップで明細へ</small></h2>${catDonut(cats, total)}<div class="cbars">${cbars}</div></section>`;
 }
@@ -922,7 +922,7 @@ function showTip(tr, c){
   tr.querySelector(".tip")?.remove(); const r = c.getBoundingClientRect(), tb = tr.getBoundingClientRect(), b = c.querySelector(".b").getBoundingClientRect();
   const v = +c.dataset.v, bg = c.dataset.b ? +c.dataset.b : null;
   const tip = document.createElement("div"); tip.className="tip";
-  tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(v)}` + (bg!==null ? `\n予算 ${yen(bg)}` + (v>bg ? `・${yen(v-bg)} オーバー` : `・残り ${yen(bg-v)}`) : "");
+  tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(v)}` + (bg!==null ? `\n予算 ${yen(bg)}` + (v>bg ? `・▲${yen(v-bg)}` : `・残り ${yen(bg-v)}`) : "");
   const line = c.querySelector(".bgt"), top = Math.min(b.top, line ? line.getBoundingClientRect().top : Infinity);
   tip.style.top = (top - tb.top - 6)+"px";   // 棒の先端（予算の線が上ならその線）の上に出す。背の高い棒では見出しにかぶってもよい
   tr.appendChild(tip);
