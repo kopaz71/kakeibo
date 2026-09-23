@@ -726,7 +726,8 @@ function showTip(tr, c){
   tr.querySelector(".tip")?.remove(); const r = c.getBoundingClientRect(), tb = tr.getBoundingClientRect(), b = c.querySelector(".b").getBoundingClientRect();
   const tip = document.createElement("div"); tip.className="tip"; tip.textContent = `${ymLabel(c.dataset.ym)}　${yen(+c.dataset.v)}`;
   let x = r.left - tb.left + r.width/2; x = Math.min(Math.max(x, 70), tb.width-70);
-  tip.style.left = x+"px"; tip.style.top = (b.top - tb.top - 6)+"px"; tr.appendChild(tip);
+  tip.style.left = x+"px"; tip.style.top = Math.max(b.top - tb.top - 6, 32)+"px";   // 見出しにかぶらないよう、背の高い棒では棒に重ねる
+  tr.appendChild(tip);
 }
 function bindTip(tr){
   tr.addEventListener("pointerover", e => { const c = e.target.closest(".col"); if (c && e.pointerType==="mouse") showTip(tr, c); });
@@ -938,6 +939,7 @@ document.addEventListener("click", async e => {
     for (const ym of Object.keys(S.months)) markDirty("m-"+ym);
     S.cats = o.cats; S.rules = o.rules||[]; S.months = o.months||{}; S.sample = !Object.keys(S.months).length;
     if (S.sample) S.months = makeSample();
+    migrateV2();   // 古いバックアップも今のカテゴリ構成に合わせる
     for (const ym of Object.keys(S.months)) markDirty("m-"+ym);
     markDirty("settings"); S.month = latestMonth(); toast("バックアップから復元しました"); render(); return; }
 });
