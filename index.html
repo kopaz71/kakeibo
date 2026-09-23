@@ -626,6 +626,24 @@ function countUp(el, from, to){
   el.textContent = fmt(from); requestAnimationFrame(step);
 }
 function flipMonth(){}
+// バックアップのお知らせ（最後に書き出した日を覚えておき、30日たったら概要で知らせる）
+const LS = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
+const dayStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const daysSince = ds => Math.floor((new Date(dayStr(new Date())+"T00:00:00") - new Date(ds+"T00:00:00")) / 864e5);
+function saveBackupAt(){ LS.set("kkb-backup-at", dayStr(new Date())); }
+function backupNote(){
+  const at = LS.get("kkb-backup-at"); if (!at) return "まだ書き出していません";
+  const [y,m,d] = at.split("-").map(Number), n = daysSince(at);
+  return `最後に書き出した日：${y}年${m}月${d}日（${n ? n+"日前" : "今日"}）`;
+}
+function backupBanner(){
+  if (store.mode!=="local" || S.sample || S.tab!=="overview") return "";
+  const at = LS.get("kkb-backup-at"), n = at ? daysSince(at) : null;
+  if (n!==null && n<30) return "";
+  const sn = LS.get("kkb-backup-snooze"); if (sn && daysSince(sn)<7) return "";
+  return `<div class="banner warn"><span>${n===null ? "<b>バックアップがまだありません。</b>" : `<b>最後のバックアップから${n}日たちました。</b>`}データはこのスマホの中にしかないので、書き出しておくと安心です。</span>
+    <span class="inline"><button class="btn sm" type="button" id="bk-later">あとで</button><button class="btn sm primary" type="button" data-go="settings">書き出す</button></span></div>`;
+}
 function render(){
   if (!S.month) S.month = latestMonth() || new Date().toISOString().slice(0,7);
   document.getElementById("mlabel").textContent = ymLabel(S.month);
@@ -634,7 +652,7 @@ function render(){
   const nb = document.getElementById("nbadge"); nb.hidden = !unc; nb.textContent = unc;
   document.querySelector(".monthnav").hidden = S.tab!=="list";
   document.getElementById("banner").innerHTML = S.sample
-    ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : "";
+    ? `<div class="banner"><span><b>サンプルデータを表示中</b>（架空の明細です）。CSVを取り込むと、あなたの明細に切り替わります。</span><button class="btn sm primary" type="button" data-go="import">CSVを取り込む</button></div>` : backupBanner();
   document.getElementById("store").textContent =
     "データはこのスマホの中だけに保存され、外部には送信されません。念のため、月に一度「設定 → バックアップ」で書き出しておいてください。";
   $view.classList.remove("grow");
@@ -814,6 +832,7 @@ function renderSettings(){
         <div class="inline"><button type="button" class="btn" id="export">書き出す</button>
           <label class="btn" for="restore">読み込む</label><input type="file" id="restore" accept=".json,application/json" hidden></div>
         ${S.pendingImport ? `<div class="confirm"><span>「${esc(S.pendingImport.name)}」（明細${S.pendingImport.count}件）で置き換えますか？</span><button type="button" class="btn sm danger armed" id="restore-ok">置き換える</button><button type="button" class="btn sm" id="restore-no">やめる</button></div>` : ""}
+        <p class="note">${backupNote()}</p>
         <div id="exportbox"></div>
 </section>
       <section class="panel"><h2>カテゴリ<small>丸をタップでアイコン変更</small></h2>
@@ -917,6 +936,7 @@ document.addEventListener("click", async e => {
   const is = t.closest("[data-iset]"); if (is){ const c = S.cats.find(x=>x.id===S.iconPick); if (c){ c.icon = is.dataset.iset; markDirty("settings"); } S.iconPick = null; render(); return; }
   const rd = t.closest("[data-rdel]"); if (rd){ S.rules.splice(+rd.dataset.rdel,1); markDirty("settings"); render(); return; }
   if (t.id==="reapply"){ reapply(); return; }
+  if (t.id==="bk-later"){ LS.set("kkb-backup-snooze", dayStr(new Date())); render(); return; }
   if (t.id==="reset"){
     if (S.armed!=="__reset"){ S.armed="__reset"; render(); return; }
     S.armed=null; for (const ym of Object.keys(S.months)) { delete S.months[ym]; markDirty("m-"+ym); }
@@ -926,16 +946,16 @@ document.addEventListener("click", async e => {
     const data = JSON.stringify({app:"kakeibo", v:1, exportedAt:new Date().toISOString(), cats:S.cats, rules:S.rules, months:S.sample?{}:S.months}, null, 1);
     const name = `kakeibo-backup-${new Date().toISOString().slice(0,10)}.json`;
     let dl = null; try { dl = await window.claude?.use?.("downloads"); } catch(err){}
-    if (dl){ try { await dl.save({filename:name, data}); toast("バックアップを保存しました"); } catch(err){ if (err?.code!=="declined") toast("保存できませんでした。もう一度お試しください。"); } }
+    if (dl){ try { await dl.save({filename:name, data}); saveBackupAt(); toast("バックアップを保存しました"); render(); } catch(err){ if (err?.code!=="declined") toast("保存できませんでした。もう一度お試しください。"); } }
     else if (!window.claude) {
       const file = new File([data], name, {type:"application/json"});
       if (navigator.canShare && navigator.canShare({files:[file]})) {
-        try { await navigator.share({files:[file], title:name}); toast("バックアップを書き出しました"); }
+        try { await navigator.share({files:[file], title:name}); saveBackupAt(); toast("バックアップを書き出しました"); render(); }
         catch(err){ if (err && err.name!=="AbortError") toast("書き出せませんでした。もう一度お試しください。"); }
         return;
       }
       const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([data],{type:"application/json"})); a.download = name;
-      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000); toast("バックアップを保存しました"); }
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000); saveBackupAt(); toast("バックアップを保存しました"); render(); }
     else { document.getElementById("exportbox").innerHTML = `<p class="note">この表示ではファイル保存ができないため、下の内容をコピーして保存してください。</p><textarea readonly style="width:100%;height:120px;font-family:var(--mono);font-size:11px">${esc(data)}</textarea>`; }
     return; }
   if (t.id==="restore-no"){ S.pendingImport=null; render(); return; }
