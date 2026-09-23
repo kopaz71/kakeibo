@@ -253,6 +253,7 @@ details.add .addform{padding:14px;background:var(--surface);box-shadow:var(--sha
 .aitext{display:block;width:100%;height:280px;margin-top:10px;padding:10px 12px;border:0;border-radius:10px;background:var(--surface-2);color:var(--ink);font-family:var(--mono);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;overflow:auto;resize:vertical}
 .toast{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;font-size:13px;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow);z-index:10;width:max-content;max-width:calc(100% - 32px)}
 .toast span{min-width:0}
+.toast.light{background:var(--surface);color:var(--ink);border:1px solid var(--hair)}
 .toast button{flex:none;white-space:nowrap}
 .toast button{border:0;background:transparent;color:var(--accent-soft);font-weight:700;cursor:pointer;text-decoration:underline}
 @media (prefers-reduced-motion:no-preference){.toast{animation:rise .2s ease-out}@keyframes rise{from{transform:translate(-50%,8px);opacity:0}}}
@@ -691,9 +692,9 @@ function reapply(){
 
 /* ---------- toast ---------- */
 let toastT = null;
-function toast(msg, actLabel, act){
+function toast(msg, actLabel, act, light){   // light：白い背景のお知らせ（「最新のバージョンです」など）
   const host = document.getElementById("toast-host");
-  host.innerHTML = `<div class="toast" role="status"><span>${esc(msg)}</span>${actLabel?`<button type="button">${esc(actLabel)}</button>`:""}</div>`;
+  host.innerHTML = `<div class="toast${light?" light":""}" role="status"><span>${esc(msg)}</span>${actLabel?`<button type="button">${esc(actLabel)}</button>`:""}</div>`;
   if (actLabel) host.querySelector("button").onclick = () => { host.innerHTML=""; act(); };
   clearTimeout(toastT); toastT = setTimeout(()=>{ host.innerHTML=""; }, actLabel?6000:3500);
 }
@@ -1170,14 +1171,16 @@ function renderSettings(){
   showAppVersion();
 }
 // 設定の一番下に、スマホに入っているバージョン（sw.js の CACHE の名前）を出す。PCとスマホで同じバージョンか比べるため
-function showAppVersion(){
+// 入っているバージョン（sw.js の CACHE の名前、例：kakeibo-v27）。分からなければ null
+async function appVersion(){
   try {
-    if (!window.caches) return;
-    caches.keys().then(ks => {
-      const k = ks.filter(x => /^kakeibo-v\d+$/.test(x)).sort((a,b)=>Number(b.slice(9))-Number(a.slice(9)))[0];
-      const el = document.getElementById("appver"); if (el && k) el.textContent = `アプリのバージョン：${k}`;
-    }).catch(()=>{});
-  } catch(e){}
+    if (!window.caches) return null;
+    const ks = await caches.keys();
+    return ks.filter(x => /^kakeibo-v\d+$/.test(x)).sort((a,b)=>Number(b.slice(9))-Number(a.slice(9)))[0] || null;
+  } catch(e){ return null; }
+}
+function showAppVersion(){
+  appVersion().then(k => { const el = document.getElementById("appver"); if (el && k) el.textContent = `アプリのバージョン：${k}`; });
 }
 
 /* ---------- events ---------- */
@@ -1402,7 +1405,7 @@ async function pullRefresh(){
     if (!reg){ location.reload(); return; }
     try { await Promise.race([reg.update(), new Promise((_,ng) => setTimeout(() => ng(new Error("timeout")), 10000))]); }   // 電波が弱いときに待ち続けない
     catch(e){ ptrHide(); toast("新しいバージョンを確認できませんでした。電波のよい場所でもう一度お試しください。"); return; }
-    if (!(reg.installing || reg.waiting)){ ptrHide(); toast("最新のバージョンです"); return; }
+    if (!(reg.installing || reg.waiting)){ const v = await appVersion(); ptrHide(); toast(`最新のバージョンです${v ? `（${v}）` : ""}`, null, null, true); return; }
     ptrShow("新しいバージョンに切り替えています…");
     await new Promise(res => { const t = setTimeout(res, 8000);
       navigator.serviceWorker.addEventListener("controllerchange", () => { clearTimeout(t); res(); }, {once:true}); });
